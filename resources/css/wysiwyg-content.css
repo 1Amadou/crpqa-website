@@ -1,0 +1,9 @@
+/* resources/css/wysiwyg-content.css */
+body {
+    font-family: Figtree, ui-sans-serif, system-ui, sans-serif; /* Ou la police de votre frontend */
+    line-height: 1.6;
+    margin: 10px; /* Un peu d'espace à l'intérieur de l'éditeur */
+}
+p { margin-bottom: 1em; }
+h1, h2, h3, h4, h5, h6 { margin-bottom: 0.5em; font-weight: 600; }
+/* Ajoutez d'autres styles que vous voulez voir dans l'éditeur */
