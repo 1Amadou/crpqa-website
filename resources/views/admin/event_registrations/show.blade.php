@@ -69,18 +69,23 @@
                         <h3 class="text-sm font-medium text-gray-500">{{ __('Date d\'Inscription') }}</h3>
                         <p class="mt-1 text-lg text-gray-900">{{ $registration->registered_at->format('d/m/Y \à H:i') }}</p>
                     </div>
-                    @if($registration->user)
-                    <div>
-                        <h3 class="text-sm font-medium text-gray-500">{{ __('Compte Utilisateur Lié') }}</h3>
-                        <p class="mt-1 text-lg text-gray-900">
-                            <a href="{{ route('admin.users.show', $registration->user) }}" class="text-blue-600 hover:underline">
-                                {{ $registration->user->name }} ({{ $registration->user->email }})
-                            </a>
-                        </p>
-                    </div>
-                    @endif
-                </div>
-            </div>
+                    @if($registration->user_id && $registration->user) {{-- L'utilisateur existe et est chargé --}}
+        <div>
+            <h3 class="text-sm font-medium text-gray-500">{{ __('Compte Utilisateur Lié') }}</h3>
+            <p class="mt-1 text-lg text-gray-900">
+                <a href="{{ route('admin.users.show', $registration->user) }}" class="text-blue-600 hover:underline">
+                    {{ $registration->user->name }} ({{ $registration->user->email }})
+                </a>
+            </p>
+        </div>
+    @else
+        <div>
+            <h3 class="text-sm font-medium text-gray-500">{{ __('Participant (Invité)') }}</h3>
+            <p class="mt-1 text-lg text-gray-900">
+                {{ $registration->name }} ({{ $registration->email }})
+            </p>
+        </div>
+    @endif
 
             @if($registration->motivation)
             <div class="mt-6 pt-6 border-t border-gray-200">

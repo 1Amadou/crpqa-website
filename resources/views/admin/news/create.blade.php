@@ -20,21 +20,21 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('admin.news.store') }}" enctype="multipart/form-data"> {{-- enctype pour l'upload d'image --}}
+            <form method="POST" action="{{ route('admin.news.store') }}" enctype="multipart/form-data">
                 @csrf
 
                 {{-- Titre --}}
                 <div class="mb-4">
-                    <label for="title" class="block font-medium text-sm text-gray-700">{{ __('Titre de l\'actualité') }} <span class="text-red-500">*</span></label>
-                    <input id="title" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" type="text" name="title" value="{{ old('title') }}" required autofocus />
+                    <label for="news_title" class="block font-medium text-sm text-gray-700">{{ __('Titre de l\'actualité') }} <span class="text-red-500">*</span></label>
+                    <input id="news_title" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" type="text" name="title" value="{{ old('title') }}" required autofocus />
                     @error('title') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 {{-- Slug --}}
                 <div class="mb-4">
-                    <label for="slug" class="block font-medium text-sm text-gray-700">{{ __('Slug (pour l\'URL)') }} <span class="text-red-500">*</span></label>
-                    <input id="slug" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" type="text" name="slug" value="{{ old('slug') }}" required />
-                    <p class="text-xs text-gray-500 mt-1">{{ __('Ex: "grande-decouverte-quantique". Uniquement minuscules, chiffres, tirets.') }}</p>
+                    <label for="news_slug" class="block font-medium text-sm text-gray-700">{{ __('Slug (pour l\'URL)') }} <span class="text-red-500">*</span></label>
+                    <input id="news_slug" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" type="text" name="slug" value="{{ old('slug') }}" required />
+                    <p class="text-xs text-gray-500 mt-1">{{ __('Sera auto-généré si laissé vide. Uniquement minuscules, chiffres, tirets.') }}</p>
                     @error('slug') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
@@ -53,10 +53,11 @@
                     <p class="text-xs text-gray-500 mt-1">{{ __('Optimal : 120-160 caractères. Un résumé pour les moteurs de recherche.') }}</p>
                     @error('meta_description') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
+
                 {{-- Résumé court (Summary) --}}
                 <div class="mb-4">
                     <label for="summary" class="block font-medium text-sm text-gray-700">{{ __('Résumé court (Optionnel)') }}</label>
-                    <textarea id="summary" name="summary" rows="3" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">{{ old('summary') }}</textarea>
+                    <textarea id="summary" name="summary" rows="3" class="wysiwyg-editor block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">{{ old('summary') }}</textarea>
                     <p class="text-xs text-gray-500 mt-1">{{ __('Un bref aperçu de l\'actualité, affiché dans les listes.') }}</p>
                     @error('summary') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -64,15 +65,15 @@
                 {{-- Contenu principal --}}
                 <div class="mb-4">
                     <label for="content" class="block font-medium text-sm text-gray-700">{{ __('Contenu principal de l\'actualité') }} <span class="text-red-500">*</span></label>
-                    <textarea id="content" name="content" rows="15" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>{{ old('content') }}</textarea>
-                    <p class="text-xs text-gray-500 mt-1">{{ __('Nous ajouterons un éditeur de texte riche ici plus tard.') }}</p>
+                    <textarea id="content" name="content" rows="15" class="wysiwyg-editor block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>{{ old('content') }}</textarea>
                     @error('content') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 {{-- Image de couverture --}}
                 <div class="mb-4">
-                    <label for="cover_image" class="block font-medium text-sm text-gray-700">{{ __('Image de couverture (Optionnel)') }}</label>
-                    <input id="cover_image" class="block mt-1 w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" type="file" name="cover_image" />
+                    <label for="news_cover_image" class="block font-medium text-sm text-gray-700">{{ __('Image de couverture (Optionnel)') }}</label>
+                    <input id="news_cover_image" class="block mt-1 w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" type="file" name="cover_image" />
+                    <img id="news_image_preview" src="#" alt="Aperçu de l'image" class="mt-2 max-h-40 w-auto rounded shadow-sm" style="display: none;"/>
                     <p class="mt-1 text-xs text-gray-500">PNG, JPG, GIF, SVG, WEBP jusqu'à 2Mo.</p>
                     @error('cover_image') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>

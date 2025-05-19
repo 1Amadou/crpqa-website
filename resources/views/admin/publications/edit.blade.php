@@ -22,19 +22,19 @@
 
             <form method="POST" action="{{ route('admin.publications.update', $publication) }}" enctype="multipart/form-data">
                 @csrf
-                @method('PUT') {{-- Méthode HTTP pour la mise à jour --}}
+                @method('PUT')
 
                 {{-- Titre --}}
                 <div class="mb-4">
-                    <label for="title" class="block font-medium text-sm text-gray-700">{{ __('Titre de la publication') }} <span class="text-red-500">*</span></label>
-                    <input id="title" class="block mt-1 w-full rounded-md shadow-sm border-gray-300" type="text" name="title" value="{{ old('title', $publication->title) }}" required autofocus />
+                    <label for="publication_title" class="block font-medium text-sm text-gray-700">{{ __('Titre de la publication') }} <span class="text-red-500">*</span></label>
+                    <input id="publication_title" class="block mt-1 w-full rounded-md shadow-sm border-gray-300" type="text" name="title" value="{{ old('title', $publication->title) }}" required autofocus />
                     @error('title') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 {{-- Slug --}}
                 <div class="mb-4">
-                    <label for="slug" class="block font-medium text-sm text-gray-700">{{ __('Slug (pour l\'URL)') }} <span class="text-red-500">*</span></label>
-                    <input id="slug" class="block mt-1 w-full rounded-md shadow-sm border-gray-300" type="text" name="slug" value="{{ old('slug', $publication->slug) }}" required />
+                    <label for="publication_slug" class="block font-medium text-sm text-gray-700">{{ __('Slug (pour l\'URL)') }} <span class="text-red-500">*</span></label>
+                    <input id="publication_slug" class="block mt-1 w-full rounded-md shadow-sm border-gray-300" type="text" name="slug" value="{{ old('slug', $publication->slug) }}" required />
                     <p class="text-xs text-gray-500 mt-1">{{ __('Ex: "ma-super-publication-2025". Uniquement minuscules, chiffres, tirets.') }}</p>
                     @error('slug') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -44,7 +44,6 @@
                     <label for="researcher_ids" class="block font-medium text-sm text-gray-700">{{ __('Auteurs Internes (Chercheurs du CRPQA)') }}</label>
                     <select name="researcher_ids[]" id="researcher_ids" multiple class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" size="5">
                         @php
-                            // Récupérer les IDs des chercheurs déjà associés à cette publication
                             $selectedResearcherIds = old('researcher_ids', $publication->researchers->pluck('id')->toArray());
                         @endphp
                         @foreach($researchers as $researcher)
@@ -68,7 +67,7 @@
                 {{-- Résumé (Abstract) --}}
                 <div class="mb-4">
                     <label for="abstract" class="block font-medium text-sm text-gray-700">{{ __('Résumé (Abstract)') }} <span class="text-red-500">*</span></label>
-                    <textarea id="abstract" name="abstract" rows="8" class="block mt-1 w-full rounded-md shadow-sm border-gray-300" required>{{ old('abstract', $publication->abstract) }}</textarea>
+                    <textarea id="abstract" name="abstract" rows="8" class="wysiwyg-editor block mt-1 w-full rounded-md shadow-sm border-gray-300" required>{{ old('abstract', $publication->abstract) }}</textarea>
                     @error('abstract') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
@@ -146,7 +145,7 @@
                     <label for="pdf" class="block font-medium text-sm text-gray-700">{{ __('Changer le fichier PDF') }}</label>
                     @if($publication->pdf_path && Storage::disk('public')->exists($publication->pdf_path))
                         <div class="mt-2 mb-2">
-                            <p class="text-sm text-gray-600">PDF actuel : 
+                            <p class="text-sm text-gray-600">PDF actuel :
                                 <a href="{{ Storage::url($publication->pdf_path) }}" target="_blank" class="text-indigo-600 hover:underline">{{ Str::afterLast($publication->pdf_path, '/') }}</a>
                             </p>
                             <label for="remove_pdf" class="inline-flex items-center mt-1 text-xs">

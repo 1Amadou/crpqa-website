@@ -22,7 +22,7 @@
 
             <form method="POST" action="{{ route('admin.researchers.update', $researcher) }}" enctype="multipart/form-data">
                 @csrf
-                @method('PUT') {{-- Méthode HTTP pour la mise à jour --}}
+                @method('PUT')
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {{-- Prénom --}}
@@ -69,17 +69,18 @@
 
                     {{-- Gestion de la Photo --}}
                     <div>
-                        <label for="photo" class="block font-medium text-sm text-gray-700">{{ __('Changer la photo de profil') }}</label>
+                        <label for="researcher_photo" class="block font-medium text-sm text-gray-700">{{ __('Changer la photo de profil') }}</label>
                         @if($researcher->photo_path && Storage::disk('public')->exists($researcher->photo_path))
                             <div class="mt-2 mb-2">
-                                <img src="{{ Storage::url($researcher->photo_path) }}" alt="Photo actuelle" class="h-24 w-24 rounded-md object-cover shadow-sm">
+                                <img src="{{ Storage::url($researcher->photo_path) }}?t={{ time() }}" alt="Photo actuelle" class="h-24 w-24 rounded-md object-cover shadow-sm">
                                 <label for="remove_photo" class="inline-flex items-center mt-2 text-xs">
                                     <input type="checkbox" id="remove_photo" name="remove_photo" value="1" class="rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500">
                                     <span class="ms-2 text-gray-700">{{ __('Supprimer la photo actuelle') }}</span>
                                 </label>
                             </div>
                         @endif
-                        <input id="photo" class="block mt-1 w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" type="file" name="photo" />
+                        <input id="researcher_photo" class="block mt-1 w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" type="file" name="photo" />
+                        <img id="researcher_photo_preview" src="#" alt="Aperçu de la nouvelle photo" class="mt-2 max-h-40 w-auto rounded shadow-sm" style="display: none;"/>
                         <p class="mt-1 text-xs text-gray-500">Laisser vide pour conserver la photo actuelle. PNG, JPG, GIF, SVG, WEBP jusqu'à 2Mo.</p>
                         @error('photo') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -88,7 +89,7 @@
                 {{-- Biographie --}}
                 <div class="mt-6">
                     <label for="biography" class="block font-medium text-sm text-gray-700">{{ __('Biographie / Présentation') }}</label>
-                    <textarea id="biography" name="biography" rows="8" class="block mt-1 w-full rounded-md shadow-sm border-gray-300">{{ old('biography', $researcher->biography) }}</textarea>
+                    <textarea id="biography" name="biography" rows="8" class="wysiwyg-editor block mt-1 w-full rounded-md shadow-sm border-gray-300">{{ old('biography', $researcher->biography) }}</textarea>
                     @error('biography') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 

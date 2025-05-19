@@ -21,7 +21,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('admin.researchers.store') }}" enctype="multipart/form-data"> {{-- N'oubliez pas enctype pour l'upload de fichiers --}}
+            <form method="POST" action="{{ route('admin.researchers.store') }}" enctype="multipart/form-data">
                 @csrf
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -69,8 +69,9 @@
 
                     {{-- Photo --}}
                     <div>
-                        <label for="photo" class="block font-medium text-sm text-gray-700">{{ __('Photo de profil') }}</label>
-                        <input id="photo" class="block mt-1 w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" type="file" name="photo" />
+                        <label for="researcher_photo" class="block font-medium text-sm text-gray-700">{{ __('Photo de profil') }}</label>
+                        <input id="researcher_photo" class="block mt-1 w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" type="file" name="photo" />
+                        <img id="researcher_photo_preview" src="#" alt="Aperçu de la photo" class="mt-2 max-h-40 w-auto rounded shadow-sm" style="display: none;"/>
                         <p class="mt-1 text-xs text-gray-500">PNG, JPG, GIF, SVG, WEBP jusqu'à 2Mo.</p>
                         @error('photo') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -79,7 +80,7 @@
                 {{-- Biographie --}}
                 <div class="mt-6">
                     <label for="biography" class="block font-medium text-sm text-gray-700">{{ __('Biographie / Présentation') }}</label>
-                    <textarea id="biography" name="biography" rows="8" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">{{ old('biography') }}</textarea>
+                    <textarea id="biography" name="biography" rows="8" class="wysiwyg-editor block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">{{ old('biography') }}</textarea>
                     @error('biography') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 

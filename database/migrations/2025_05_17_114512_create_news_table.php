@@ -19,7 +19,7 @@ return new class extends Migration
             $table->longText('content');
             $table->string('cover_image_path')->nullable();
             $table->timestamp('published_at')->nullable();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            // La ligne problématique $table->foreignId('user_id')... a été SUPPRIMÉE
             $table->boolean('is_featured')->default(false);
             $table->timestamps();
         });

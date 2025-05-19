@@ -17,23 +17,23 @@ class RolesAndPermissionsSeeder extends Seeder
         // Réinitialiser les rôles et permissions mis en cache
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Définition des Permissions
-        // (Vous pouvez être aussi granulaire que nécessaire)
+        $this->command->info('Creating permissions...');
 
         // Permissions pour les utilisateurs
-        Permission::firstOrCreate(['name' => 'manage users']); // Créer, voir, modifier, supprimer des utilisateurs
+        Permission::firstOrCreate(['name' => 'manage users']);
 
-        // Permissions pour les rôles (si vous voulez gérer les rôles eux-mêmes depuis l'interface plus tard)
-        // Permission::firstOrCreate(['name' => 'manage roles']);
+        // Permissions pour les rôles
+        Permission::firstOrCreate(['name' => 'manage roles']); // DÉCOMMENTÉ !
 
         // Permissions pour les contenus
         Permission::firstOrCreate(['name' => 'manage static pages']);
-        Permission::firstOrCreate(['name' => 'manage researchers']); // Gérer les profils chercheurs (pas les comptes utilisateurs chercheurs)
-        Permission::firstOrCreate(['name' => 'manage publications']); // Gérer TOUTES les publications
-        Permission::firstOrCreate(['name' => 'manage own publications']); // Gérer SES PROPRES publications
+        Permission::firstOrCreate(['name' => 'manage researchers']);
+        Permission::firstOrCreate(['name' => 'manage publications']);
+        Permission::firstOrCreate(['name' => 'manage own publications']);
         Permission::firstOrCreate(['name' => 'manage news']);
         Permission::firstOrCreate(['name' => 'manage events']);
         Permission::firstOrCreate(['name' => 'manage partners']);
+        Permission::firstOrCreate(['name' => 'manage research axes']); // Ajout potentiel si nécessaire
 
         // Permissions pour les paramètres
         Permission::firstOrCreate(['name' => 'manage site settings']);
@@ -41,69 +41,82 @@ class RolesAndPermissionsSeeder extends Seeder
         // Permissions d'accès général au panneau d'administration
         Permission::firstOrCreate(['name' => 'access admin panel']);
 
+        $this->command->info('Permissions created successfully.');
+        $this->command->info('Creating roles and assigning permissions...');
 
-        // Définition des Rôles et assignation des permissions
-
-        // Rôle: Super Administrateur - a toutes les permissions
+        // Rôle: Super Administrateur
         $superAdminRole = Role::firstOrCreate(['name' => 'Super Administrateur']);
-        // $superAdminRole->givePermissionTo(Permission::all()); // Donne toutes les permissions existantes
-        // Ou, de manière plus explicite (recommandé si vous voulez un contrôle plus fin à l'avenir)
-        $superAdminRole->givePermissionTo([
+        // Assigner toutes les permissions créées explicitement
+        // (Permission::all() peut être problématique si des permissions "fantômes" existent)
+        $allDefinedPermissions = [
+            'manage users', 'manage roles', 'manage static pages', 'manage researchers',
+            'manage publications', 'manage own publications', 'manage news', 'manage events',
+            'manage partners', 'manage research axes', 'manage site settings', 'access admin panel'
+        ];
+        // Filtrer pour s'assurer que seules les permissions réellement créées sont assignées
+        $existingPermissions = Permission::whereIn('name', $allDefinedPermissions)->pluck('name')->toArray();
+        $superAdminRole->syncPermissions($existingPermissions); // Utiliser syncPermissions est plus sûr
+        $this->command->info('Role "Super Administrateur" created and permissions synced.');
+
+
+        // Rôle: Administrateur (si différent du Super Administrateur)
+        // Si vous avez besoin d'un rôle 'Administrateur' distinct avec moins de droits que le Super Admin,
+        // vous pouvez le définir ici. Sinon, le Super Administrateur couvre tout.
+        // Exemple :
+        /*
+        $adminRole = Role::firstOrCreate(['name' => 'Administrateur']);
+        $adminRole->syncPermissions([
             'access admin panel',
-            'manage users',
-            'manage roles',
+            'manage users', // Peut-être pas 'manage roles' pour un admin standard
             'manage static pages',
             'manage researchers',
-            'manage publications', // Le Super Admin peut gérer toutes les publications
+            'manage publications',
             'manage news',
             'manage events',
             'manage partners',
             'manage site settings',
         ]);
+        $this->command->info('Role "Administrateur" created and permissions synced.');
+        */
 
 
-        // Rôle: Éditeur - gère les contenus généraux
+        // Rôle: Éditeur
         $editorRole = Role::firstOrCreate(['name' => 'Éditeur']);
-        $editorRole->givePermissionTo([
+        $editorRole->syncPermissions([ // Utiliser syncPermissions
             'access admin panel',
             'manage static pages',
             'manage news',
             'manage events',
-            'manage partners', // Un éditeur pourrait aussi gérer les partenaires
-            'manage publications',
+            'manage partners',
+            'manage publications', // Un éditeur peut gérer toutes les publications
+            // 'manage researchers', // Peut-être pas les profils chercheurs eux-mêmes
         ]);
+        $this->command->info('Role "Éditeur" created and permissions synced.');
 
-        // Rôle: Chercheur - gère ses propres publications
+        // Rôle: Chercheur
         $researcherRole = Role::firstOrCreate(['name' => 'Chercheur']);
-        $researcherRole->givePermissionTo([
-            'access admin panel', // Pour accéder à son interface de gestion de publications
-            'manage own publications', // Permission clé
-            // Optionnel: 'view own profile' ou 'edit own profile' si on développe cette fonctionnalité
+        $researcherRole->syncPermissions([ // Utiliser syncPermissions
+            'access admin panel',
+            'manage own publications',
         ]);
+        $this->command->info('Role "Chercheur" created and permissions synced.');
 
+        $this->command->info('Roles and permissions seeding completed.');
+        $this->command->info('Creating default users...');
 
-        // Création d'un utilisateur Super Administrateur par défaut (si aucun n'existe)
-        // Assurez-vous de changer l'email et le mot de passe pour la production
+        // Création d'un utilisateur Super Administrateur par défaut
         $superAdminUser = User::firstOrCreate(
-            ['email' => 'superadmin@crpqa.ml'], // Email unique pour la recherche
+            ['email' => 'superadmin@crpqa.ml'],
             [
                 'name' => 'Super Admin CRPQA',
-                'password' => bcrypt('password123'), // Changez ce mot de passe !
-            ]
-        );
-        $superAdminUser->assignRole($superAdminRole);
-
-        // Vous pouvez créer d'autres utilisateurs par défaut ici si nécessaire
-        // Par exemple, un Éditeur de test
-        /*
-        $editorUser = User::firstOrCreate(
-            ['email' => 'editor@crpqa.ml'],
-            [
-                'name' => 'Éditeur Contenu',
                 'password' => bcrypt('password123'),
             ]
         );
-        $editorUser->assignRole($editorRole);
-        */
+        $superAdminUser->assignRole('Super Administrateur'); // Assigner par nom de rôle est simple
+        $this->command->info("User 'Super Admin CRPQA' created and assigned 'Super Administrateur' role.");
+
+        // Vous pouvez ajouter la création d'autres utilisateurs ici si vous le souhaitez
+
+        $this->command->info('Default users creation completed.');
     }
 }

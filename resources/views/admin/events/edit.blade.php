@@ -26,8 +26,8 @@
                     <div class="md:col-span-2 space-y-6">
                         {{-- Titre --}}
                         <div>
-                            <label for="title" class="block text-sm font-medium text-gray-700">{{ __('Titre de l\'événement') }} <span class="text-red-500">*</span></label>
-                            <input type="text" name="title" id="title" value="{{ old('title', $event->title) }}" required autofocus class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('title') border-red-500 @enderror" onkeyup="generateEventSlug(this.value)">
+                            <label for="event_title" class="block text-sm font-medium text-gray-700">{{ __('Titre de l\'événement') }} <span class="text-red-500">*</span></label>
+                            <input type="text" name="title" id="event_title" value="{{ old('title', $event->title) }}" required autofocus class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('title') border-red-500 @enderror">
                             @error('title')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -35,8 +35,8 @@
 
                         {{-- Slug --}}
                         <div>
-                            <label for="slug" class="block text-sm font-medium text-gray-700">{{ __('Slug (URL)') }} <span class="text-red-500">*</span></label>
-                            <input type="text" name="slug" id="slug" value="{{ old('slug', $event->slug) }}" required class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md bg-gray-50 @error('slug') border-red-500 @enderror">
+                            <label for="event_slug" class="block text-sm font-medium text-gray-700">{{ __('Slug (URL)') }} <span class="text-red-500">*</span></label>
+                            <input type="text" name="slug" id="event_slug" value="{{ old('slug', $event->slug) }}" required class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md bg-gray-50 @error('slug') border-red-500 @enderror">
                             <p class="mt-1 text-xs text-gray-500">{{ __('Sera auto-généré à partir du titre si laissé vide ou si inchangé. Utilisez des tirets et des minuscules.') }}</p>
                             @error('slug')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -46,14 +46,13 @@
                         {{-- Description --}}
                         <div>
                             <label for="description" class="block text-sm font-medium text-gray-700">{{ __('Description complète') }} <span class="text-red-500">*</span></label>
-                            <textarea name="description" id="description" rows="10" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('description') border-red-500 @enderror">{{ old('description', $event->description) }}</textarea>
-                            <p class="mt-1 text-xs text-gray-500">{{ __('Nous ajouterons un éditeur de texte riche ici plus tard.') }}</p>
+                            <textarea name="description" id="description" rows="10" class="wysiwyg-editor mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('description') border-red-500 @enderror">{{ old('description', $event->description) }}</textarea>
+                            {{-- <p class="mt-1 text-xs text-gray-500">{{ __('Nous ajouterons un éditeur de texte riche ici plus tard.') }}</p> --}}
                             @error('description')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
-
-                        {{-- Après le champ Description --}}
+                        
                         <div>
                             <label for="target_audience" class="block text-sm font-medium text-gray-700">{{ __('Publics Cibles (Optionnel)') }}</label>
                             <textarea name="target_audience" id="target_audience" rows="3" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('target_audience') border-red-500 @enderror">{{ old('target_audience', $event->target_audience) }}</textarea>
@@ -128,7 +127,7 @@
                     <div class="md:col-span-1 space-y-6">
                         {{-- Image de couverture --}}
                         <div>
-                            <label for="cover_image" class="block text-sm font-medium text-gray-700">{{ __('Image de couverture (Optionnel)') }}</label>
+                            <label for="event_cover_image" class="block text-sm font-medium text-gray-700">{{ __('Image de couverture (Optionnel)') }}</label>
                             @if($event->cover_image_path && Storage::disk('public')->exists($event->cover_image_path))
                                 <div class="mt-2 mb-1">
                                     <img src="{{ Storage::url($event->cover_image_path) }}?t={{ time() }}" alt="Image actuelle" class="max-h-40 w-auto rounded border p-1 shadow-sm">
@@ -139,7 +138,7 @@
                                 </div>
                                 <p class="mt-1 text-xs text-gray-500">{{ __('Pour remplacer, choisissez une nouvelle image ci-dessous.') }}</p>
                             @endif
-                            <input type="file" name="cover_image" id="cover_image" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 @error('cover_image') border-red-500 @enderror" onchange="previewEventImage(event)">
+                            <input type="file" name="cover_image" id="event_cover_image" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 @error('cover_image') border-red-500 @enderror">
                             <p class="mt-1 text-xs text-gray-500">{{ __('Max 2MB. Formats : jpg, png, gif, svg, webp.') }}</p>
                             <img id="event_image_preview" src="#" alt="Prévisualisation de la nouvelle image" class="mt-2 max-h-48 w-auto rounded shadow-sm" style="display: none;"/>
                             @error('cover_image')
@@ -148,27 +147,25 @@
                         </div>
 
                         <div>
-    <label for="partner_ids" class="block text-sm font-medium text-gray-700">{{ __('Partenaires Associés à l\'Événement (Optionnel)') }}</label>
-    <select name="partner_ids[]" id="partner_ids" multiple
-        class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-        size="5">
-        @if(isset($partners) && $partners->count() > 0)
-            @foreach($partners as $partner)
-                <option value="{{ $partner->id }}"
-                    {{ collect(old('partner_ids', $event->associatedPartners->pluck('id')->toArray()))->contains($partner->id) ? 'selected' : '' }}>
-                    {{ $partner->name }}
-                </option>
-            @endforeach
-        @else
-            <option value="" disabled>{{ __('Aucun partenaire actif trouvé. Veuillez d\'abord en créer.') }}</option>
-        @endif
-    </select>
-    <p class="mt-1 text-xs text-gray-500">{{ __('Maintenez Ctrl (ou Cmd sur Mac) pour sélectionner plusieurs partenaires.') }}</p>
-    @error('partner_ids') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-    @error('partner_ids.*') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-</div>
-
-
+                            <label for="partner_ids" class="block text-sm font-medium text-gray-700">{{ __('Partenaires Associés à l\'Événement (Optionnel)') }}</label>
+                            <select name="partner_ids[]" id="partner_ids" multiple
+                                class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                size="5">
+                                @if(isset($partners) && $partners->count() > 0)
+                                    @foreach($partners as $partner)
+                                        <option value="{{ $partner->id }}"
+                                            {{ collect(old('partner_ids', $event->associatedPartners->pluck('id')->toArray()))->contains($partner->id) ? 'selected' : '' }}>
+                                            {{ $partner->name }}
+                                        </option>
+                                    @endforeach
+                                @else
+                                    <option value="" disabled>{{ __('Aucun partenaire actif trouvé. Veuillez d\'abord en créer.') }}</option>
+                                @endif
+                            </select>
+                            <p class="mt-1 text-xs text-gray-500">{{ __('Maintenez Ctrl (ou Cmd sur Mac) pour sélectionner plusieurs partenaires.') }}</p>
+                            @error('partner_ids') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                            @error('partner_ids.*') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                        </div>
                         
                         {{-- Mise en vedette --}}
                         <div class="flex items-start">
@@ -214,6 +211,4 @@
             </form>
         </div>
     </div>
-
-    
 @endsection

@@ -22,19 +22,19 @@
 
             <form method="POST" action="{{ route('admin.news.update', $newsItem) }}" enctype="multipart/form-data">
                 @csrf
-                @method('PUT') {{-- Méthode HTTP pour la mise à jour --}}
+                @method('PUT')
 
                 {{-- Titre --}}
                 <div class="mb-4">
-                    <label for="title" class="block font-medium text-sm text-gray-700">{{ __('Titre de l\'actualité') }} <span class="text-red-500">*</span></label>
-                    <input id="title" class="block mt-1 w-full rounded-md shadow-sm border-gray-300" type="text" name="title" value="{{ old('title', $newsItem->title) }}" required autofocus />
+                    <label for="news_title" class="block font-medium text-sm text-gray-700">{{ __('Titre de l\'actualité') }} <span class="text-red-500">*</span></label>
+                    <input id="news_title" class="block mt-1 w-full rounded-md shadow-sm border-gray-300" type="text" name="title" value="{{ old('title', $newsItem->title) }}" required autofocus />
                     @error('title') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 {{-- Slug --}}
                 <div class="mb-4">
-                    <label for="slug" class="block font-medium text-sm text-gray-700">{{ __('Slug (pour l\'URL)') }} <span class="text-red-500">*</span></label>
-                    <input id="slug" class="block mt-1 w-full rounded-md shadow-sm border-gray-300" type="text" name="slug" value="{{ old('slug', $newsItem->slug) }}" required />
+                    <label for="news_slug" class="block font-medium text-sm text-gray-700">{{ __('Slug (pour l\'URL)') }} <span class="text-red-500">*</span></label>
+                    <input id="news_slug" class="block mt-1 w-full rounded-md shadow-sm border-gray-300" type="text" name="slug" value="{{ old('slug', $newsItem->slug) }}" required />
                     <p class="text-xs text-gray-500 mt-1">{{ __('Ex: "grande-decouverte-quantique". Uniquement minuscules, chiffres, tirets.') }}</p>
                     @error('slug') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -54,10 +54,11 @@
                     <p class="text-xs text-gray-500 mt-1">{{ __('Optimal : 120-160 caractères.') }}</p>
                     @error('meta_description') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
+
                 {{-- Résumé court (Summary) --}}
                 <div class="mb-4">
                     <label for="summary" class="block font-medium text-sm text-gray-700">{{ __('Résumé court (Optionnel)') }}</label>
-                    <textarea id="summary" name="summary" rows="3" class="block mt-1 w-full rounded-md shadow-sm border-gray-300">{{ old('summary', $newsItem->summary) }}</textarea>
+                    <textarea id="summary" name="summary" rows="3" class="wysiwyg-editor block mt-1 w-full rounded-md shadow-sm border-gray-300">{{ old('summary', $newsItem->summary) }}</textarea>
                     <p class="text-xs text-gray-500 mt-1">{{ __('Un bref aperçu de l\'actualité.') }}</p>
                     @error('summary') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -65,24 +66,24 @@
                 {{-- Contenu principal --}}
                 <div class="mb-4">
                     <label for="content" class="block font-medium text-sm text-gray-700">{{ __('Contenu principal') }} <span class="text-red-500">*</span></label>
-                    <textarea id="content" name="content" rows="15" class="block mt-1 w-full rounded-md shadow-sm border-gray-300" required>{{ old('content', $newsItem->content) }}</textarea>
-                    <p class="text-xs text-gray-500 mt-1">{{ __('Nous ajouterons un éditeur de texte riche ici plus tard.') }}</p>
+                    <textarea id="content" name="content" rows="15" class="wysiwyg-editor block mt-1 w-full rounded-md shadow-sm border-gray-300" required>{{ old('content', $newsItem->content) }}</textarea>
                     @error('content') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 {{-- Gestion de l'Image de Couverture --}}
                 <div class="mb-4">
-                    <label for="cover_image" class="block font-medium text-sm text-gray-700">{{ __('Changer l\'image de couverture') }}</label>
+                    <label for="news_cover_image" class="block font-medium text-sm text-gray-700">{{ __('Changer l\'image de couverture') }}</label>
                     @if($newsItem->cover_image_path && Storage::disk('public')->exists($newsItem->cover_image_path))
                         <div class="mt-2 mb-2">
-                            <img src="{{ Storage::url($newsItem->cover_image_path) }}" alt="Image actuelle" class="h-24 w-auto rounded-md object-cover shadow-sm">
+                            <img src="{{ Storage::url($newsItem->cover_image_path) }}?t={{ time() }}" alt="Image actuelle" class="h-24 w-auto rounded-md object-cover shadow-sm">
                             <label for="remove_cover_image" class="inline-flex items-center mt-2 text-xs">
                                 <input type="checkbox" id="remove_cover_image" name="remove_cover_image" value="1" class="rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500">
                                 <span class="ms-2 text-gray-700">{{ __('Supprimer l\'image actuelle') }}</span>
                             </label>
                         </div>
                     @endif
-                    <input id="cover_image" class="block mt-1 w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" type="file" name="cover_image" />
+                    <input id="news_cover_image" class="block mt-1 w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" type="file" name="cover_image" />
+                    <img id="news_image_preview" src="#" alt="Aperçu de la nouvelle image" class="mt-2 max-h-40 w-auto rounded shadow-sm" style="display: none;"/>
                     <p class="mt-1 text-xs text-gray-500">Laisser vide pour conserver l'image actuelle (sauf si "Supprimer" est coché). PNG, JPG, GIF, SVG, WEBP jusqu'à 2Mo.</p>
                     @error('cover_image') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>

@@ -1,12 +1,11 @@
 <?php
-
 namespace App\Models;
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo; 
-use Illuminate\Database\Eloquent\Relations\HasMany; 
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo; // AJOUTÉ
+use Illuminate\Database\Eloquent\Relations\HasMany; 
 
 class Event extends Model
 {
@@ -20,12 +19,12 @@ class Event extends Model
         'end_datetime',
         'location',
         'cover_image_path',
-        'registration_url', // Nous pourrions reconsidérer l'usage de ce champ plus tard
         'is_featured',
-        'user_id', 
+        'registration_url',
         'meta_title',
         'meta_description',
         'target_audience',
+        'created_by_user_id', // AJOUTÉ ICI
     ];
 
     protected $casts = [
@@ -34,31 +33,39 @@ class Event extends Model
         'is_featured' => 'boolean',
     ];
 
-    /**
-     * L'utilisateur (admin) qui a créé l'événement.
-     */
-    public function user(): BelongsTo // Ou creator() selon votre préférence
+    public function partners(): BelongsToMany
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsToMany(Partner::class, 'event_partner');
     }
 
-    /**
-     * Récupère toutes les inscriptions pour cet événement.
-     */
-    public function registrations(): HasMany 
+    // AJOUTER CETTE RELATION
+    public function creator(): BelongsTo
     {
-        return $this->hasMany(EventRegistration::class);
+        return $this->belongsTo(User::class, 'created_by_user_id');
     }
 
-    /**
-     * Les partenaires associés à cet événement.
-     */
-    public function associatedPartners(): BelongsToMany // << NOUVELLE RELATION
+    public function setTitleAttribute($value)
     {
-        return $this->belongsToMany(Partner::class, 'event_partner', 'event_id', 'partner_id')
-                    ->withTimestamps(); // Optionnel, si vous voulez gérer les timestamps de la table pivot
+        $this->attributes['title'] = $value;
+        if (empty($this->attributes['slug'])) {
+            $this->attributes['slug'] = Str::slug($value);
+        }
     }
 
-    // Vous pourriez ajouter d'autres relations ici plus tard,
-    // par exemple pour les partenaires de l'événement ou le public cible si ce sont des tables séparées.
+    public function user(): BelongsTo
+{
+    return $this->belongsTo(User::class, 'created_by_user_id');
+}
+
+// ----- AJOUTEZ CETTE MÉTHODE POUR LA RELATION -----
+    /**
+     * Get all of the registrations for the Event.
+     * Un événement (Event) peut avoir plusieurs inscriptions (EventRegistration).
+     */
+    public function registrations(): HasMany // Le nom doit correspondre à celui utilisé dans le contrôleur
+    {
+        // La clé étrangère 'event_id' est sur la table 'event_registrations'
+        return $this->hasMany(EventRegistration::class, 'event_id');
+    }
+    // ----------------------------------------------------
 }

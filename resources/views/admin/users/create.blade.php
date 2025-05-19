@@ -76,9 +76,8 @@
                             @enderror
                         </div>
 
-                        {{-- Lier à un profil Chercheur (Optionnel, si le rôle "Chercheur" est sélectionné) --}}
-                        {{-- Un script JS pourrait afficher/masquer ce champ en fonction de la sélection du rôle "Chercheur" --}}
-                        <div id="researcher_assignment_section" class="mt-4" style="display: none;"> {{-- Caché par défaut --}}
+                        {{-- Lier à un profil Chercheur --}}
+                        <div id="researcher_assignment_section" class="mt-4" style="display: none;"> {{-- Caché par défaut, géré par JS --}}
                             <label for="researcher_id" class="block text-sm font-medium text-gray-700">{{ __('Lier au Profil Chercheur (Optionnel)') }}</label>
                             <select name="researcher_id" id="researcher_id" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('researcher_id') border-red-500 @enderror">
                                 <option value="">{{ __('-- Sélectionner un profil chercheur non lié --') }}</option>
@@ -112,28 +111,4 @@
             </form>
         </div>
     </div>
-    {{--
-        Note pour l'intégration JavaScript :
-        Un script serait utile ici pour afficher la section 'researcher_assignment_section'
-        uniquement si la case à cocher du rôle "Chercheur" est sélectionnée.
-        Ce script devrait être placé dans vos fichiers JS globaux (ex: resources/js/admin/forms.js).
-
-        Exemple de logique JS (à adapter) :
-        const rolesCheckboxes = document.querySelectorAll('input[name="roles[]"]');
-        const researcherSection = document.getElementById('researcher_assignment_section');
-        const researcherRoleName = 'Chercheur'; // Ou le nom exact du rôle
-
-        function toggleResearcherSection() {
-            let researcherRoleSelected = false;
-            rolesCheckboxes.forEach(checkbox => {
-                if (checkbox.value === researcherRoleName && checkbox.checked) {
-                    researcherRoleSelected = true;
-                }
-            });
-            researcherSection.style.display = researcherRoleSelected ? 'block' : 'none';
-        }
-
-        rolesCheckboxes.forEach(checkbox => checkbox.addEventListener('change', toggleResearcherSection));
-        document.addEventListener('DOMContentLoaded', toggleResearcherSection); // Exécuter au chargement de la page
-    --}}
 @endsection

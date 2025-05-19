@@ -25,15 +25,15 @@
 
                 {{-- Titre --}}
                 <div class="mb-4">
-                    <label for="title" class="block font-medium text-sm text-gray-700">{{ __('Titre de la publication') }} <span class="text-red-500">*</span></label>
-                    <input id="title" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" type="text" name="title" value="{{ old('title') }}" required autofocus onkeyup="generatePublicationSlug(this.value)" />
+                    <label for="publication_title" class="block font-medium text-sm text-gray-700">{{ __('Titre de la publication') }} <span class="text-red-500">*</span></label>
+                    <input id="publication_title" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" type="text" name="title" value="{{ old('title') }}" required autofocus />
                     @error('title') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 {{-- Slug --}}
                 <div class="mb-4">
-                    <label for="slug" class="block font-medium text-sm text-gray-700">{{ __('Slug (pour l\'URL)') }} <span class="text-red-500">*</span></label>
-                    <input id="slug" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" type="text" name="slug" value="{{ old('slug') }}" required />
+                    <label for="publication_slug" class="block font-medium text-sm text-gray-700">{{ __('Slug (pour l\'URL)') }} <span class="text-red-500">*</span></label>
+                    <input id="publication_slug" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" type="text" name="slug" value="{{ old('slug') }}" required />
                     <p class="text-xs text-gray-500 mt-1">{{ __('Sera auto-généré si laissé vide. Uniquement minuscules, chiffres, tirets.') }}</p>
                     @error('slug') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -43,7 +43,7 @@
                     <label for="researcher_ids" class="block font-medium text-sm text-gray-700">{{ __('Auteurs Internes (Chercheurs du CRPQA)') }}</label>
                     <select name="researcher_ids[]" id="researcher_ids" multiple class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" size="5">
                         @foreach($researchers as $researcher)
-                            <option value="{{ $researcher->id }}" 
+                            <option value="{{ $researcher->id }}"
                                     {{ (collect(old('researcher_ids', $loggedInResearcherId ?? []))->contains($researcher->id)) ? 'selected' : '' }}>
                                 {{ $researcher->first_name }} {{ $researcher->last_name }} ({{ $researcher->email }})
                             </option>
@@ -64,8 +64,7 @@
                 {{-- Résumé (Abstract) --}}
                 <div class="mb-4">
                     <label for="abstract" class="block font-medium text-sm text-gray-700">{{ __('Résumé (Abstract)') }} <span class="text-red-500">*</span></label>
-                    <textarea id="abstract" name="abstract" rows="8" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>{{ old('abstract') }}</textarea>
-                    <p class="mt-1 text-xs text-gray-500">{{_('Nous ajouterons un éditeur de texte riche ici plus tard.')}}</p>
+                    <textarea id="abstract" name="abstract" rows="8" class="wysiwyg-editor block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>{{ old('abstract') }}</textarea>
                     @error('abstract') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
@@ -90,7 +89,7 @@
                     </div>
                 </div>
 
-                {{-- Champs spécifiques au type (Journal, Conférence etc.) --}}
+                 {{-- Champs spécifiques au type (Journal, Conférence etc.) --}}
                 <div class="p-4 border border-dashed border-gray-300 rounded-md mb-4 bg-slate-50">
                     <p class="text-sm font-medium text-gray-700 mb-2">Informations Additionnelles (selon le type de publication) :</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -166,9 +165,4 @@
             </form>
         </div>
     </div>
-    {{--
-        Note pour l'intégration JavaScript (à externaliser) :
-        - Fonction pour générer le slug à partir du titre (ex: generatePublicationSlug)
-        - Si vous ajoutez une prévisualisation pour le PDF (plus complexe) ou une validation de taille/type côté client.
-    --}}
 @endsection

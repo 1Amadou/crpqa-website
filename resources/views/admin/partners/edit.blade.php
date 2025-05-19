@@ -54,8 +54,7 @@
                         {{-- Description --}}
                         <div>
                             <label for="description" class="block text-sm font-medium text-gray-700">{{ __('Description (Optionnel)') }}</label>
-                            <textarea name="description" id="description" rows="6" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('description') border-red-500 @enderror">{{ old('description', $partner->description) }}</textarea>
-                            <p class="mt-1 text-xs text-gray-500">{{ __('Détails sur la collaboration, missions, objectifs, etc. Nous ajouterons un éditeur de texte riche ici plus tard si besoin.') }}</p>
+                            <textarea name="description" id="description" rows="6" class="wysiwyg-editor mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('description') border-red-500 @enderror">{{ old('description', $partner->description) }}</textarea>
                             @error('description')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -66,10 +65,10 @@
                     <div class="md:col-span-1 space-y-6">
                         {{-- Logo --}}
                         <div>
-                            <label for="logo" class="block text-sm font-medium text-gray-700">{{ __('Logo du Partenaire (Optionnel)') }}</label>
+                            <label for="partner_logo_input" class="block text-sm font-medium text-gray-700">{{ __('Logo du Partenaire (Optionnel)') }}</label>
                             @if($partner->logo_path && Storage::disk('public')->exists($partner->logo_path))
                                 <div class="mt-2 mb-2">
-                                    <img src="{{ Storage::url($partner->logo_path) }}" alt="Logo actuel de {{ $partner->name }}" class="max-h-32 w-auto rounded border p-1 shadow-sm">
+                                    <img src="{{ Storage::url($partner->logo_path) }}?t={{ time() }}" alt="Logo actuel de {{ $partner->name }}" class="max-h-32 w-auto rounded border p-1 shadow-sm">
                                     <div class="mt-2">
                                         <input type="checkbox" name="remove_logo" id="remove_logo" value="1" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                                         <label for="remove_logo" class="ml-2 text-sm text-gray-700">{{ __('Supprimer le logo actuel') }}</label>
@@ -77,9 +76,9 @@
                                 </div>
                                 <p class="mt-1 text-xs text-gray-500">{{ __('Pour remplacer, choisissez un nouveau logo ci-dessous.') }}</p>
                             @endif
-                            <input type="file" name="logo" id="logo" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 @error('logo') border-red-500 @enderror" onchange="previewPartnerLogoEdit(event)">
+                            <input type="file" name="logo" id="partner_logo_input" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 @error('logo') border-red-500 @enderror">
                             <p class="mt-1 text-xs text-gray-500">{{ __('Max 2MB. Formats : jpg, png, gif, svg, webp.') }}</p>
-                            <img id="logo_preview_edit" src="#" alt="Prévisualisation du nouveau logo" class="mt-2 max-h-40 w-auto rounded border p-1 shadow-sm" style="display: none;"/>
+                            <img id="partner_logo_preview" src="#" alt="Prévisualisation du nouveau logo" class="mt-2 max-h-40 w-auto rounded border p-1 shadow-sm" style="display: none;"/>
                             @error('logo')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -120,33 +119,4 @@
             </form>
         </div>
     </div>
-    {{--
-        Note pour l'intégration JavaScript :
-        La fonction 'previewPartnerLogoEdit(event)' pour la prévisualisation du logo
-        devrait être définie dans un fichier JS global (ex: resources/js/admin/image-preview.js)
-        et importée via Vite. L'ID 'logo_preview_edit' est utilisé pour éviter les conflits
-        si la même page charge plusieurs instances de prévisualisation ou si une fonction globale
-        est utilisée avec des IDs fixes.
-
-        Exemple de fonction (à adapter et à placer dans le fichier JS approprié) :
-        function previewPartnerLogoEdit(event) {
-            const reader = new FileReader();
-            const imagePreview = document.getElementById('logo_preview_edit'); // ID spécifique
-            if (imagePreview) {
-                reader.onload = function(){
-                    if (reader.readyState === 2) {
-                        imagePreview.src = reader.result;
-                        imagePreview.style.display = 'block';
-                    }
-                }
-                if(event.target.files[0]){
-                    reader.readAsDataURL(event.target.files[0]);
-                } else {
-                    // Optionnel: ne rien faire ou masquer si aucun fichier n'est sélectionné
-                    // imagePreview.src = '#';
-                    // imagePreview.style.display = 'none';
-                }
-            }
-        }
-    --}}
 @endsection

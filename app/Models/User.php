@@ -2,18 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail; // Vous n'utilisez pas MustVerifyEmail
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Spatie\Permission\Traits\HasRoles; // Importé
 
-class User extends Authenticatable // implements MustVerifyEmail
+class User extends Authenticatable // Vous n'implémentez pas MustVerifyEmail ici
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles; // HasRoles est déjà là, c'est bien
 
     /**
-     * Les attributs pouvant être assignés en masse.
+     * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
@@ -21,10 +21,11 @@ class User extends Authenticatable // implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'researcher_id', // Ce champ existe dans votre migration users, mais la relation est mieux gérée via Researcher
     ];
 
     /**
-     * Les attributs à cacher lors de la sérialisation.
+     * The attributes that should be hidden for serialization.
      *
      * @var array<int, string>
      */
@@ -34,11 +35,11 @@ class User extends Authenticatable // implements MustVerifyEmail
     ];
 
     /**
-     * Les attributs à caster automatiquement.
+     * Get the attributes that should be cast.
      *
      * @return array<string, string>
      */
-    protected function casts(): array
+    protected function casts(): array // Nouvelle syntaxe pour casts dans Laravel 10+
     {
         return [
             'email_verified_at' => 'datetime',
@@ -46,11 +47,15 @@ class User extends Authenticatable // implements MustVerifyEmail
         ];
     }
 
+    // ----- AJOUTEZ CETTE MÉTHODE POUR LA RELATION -----
     /**
-     * Relation : l'utilisateur peut avoir un profil chercheur associé.
+     * Get the researcher profile associated with the user.
+     * Un utilisateur (User) a un seul profil chercheur (Researcher).
      */
-    public function researcher(): HasOne
+    public function researcherProfile() // Le nom doit correspondre à celui utilisé dans whereDoesntHave
     {
-        return $this->hasOne(Researcher::class);
+        // La clé étrangère 'user_id' est sur la table 'researchers'
+        return $this->hasOne(Researcher::class, 'user_id');
     }
+    // ----------------------------------------------------
 }

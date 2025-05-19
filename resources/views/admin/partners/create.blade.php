@@ -53,8 +53,7 @@
                         {{-- Description --}}
                         <div>
                             <label for="description" class="block text-sm font-medium text-gray-700">{{ __('Description (Optionnel)') }}</label>
-                            <textarea name="description" id="description" rows="6" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
-                            <p class="mt-1 text-xs text-gray-500">{{ __('Détails sur la collaboration, missions, objectifs, etc. Nous ajouterons un éditeur de texte riche ici plus tard si besoin.') }}</p>
+                            <textarea name="description" id="description" rows="6" class="wysiwyg-editor mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
                             @error('description')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -65,10 +64,10 @@
                     <div class="md:col-span-1 space-y-6">
                         {{-- Logo --}}
                         <div>
-                            <label for="logo" class="block text-sm font-medium text-gray-700">{{ __('Logo du Partenaire (Optionnel)') }}</label>
-                            <input type="file" name="logo" id="logo" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 @error('logo') border-red-500 @enderror" onchange="previewPartnerLogo(event)">
+                            <label for="partner_logo_input" class="block text-sm font-medium text-gray-700">{{ __('Logo du Partenaire (Optionnel)') }}</label>
+                            <input type="file" name="logo" id="partner_logo_input" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 @error('logo') border-red-500 @enderror">
                             <p class="mt-1 text-xs text-gray-500">{{ __('Max 2MB. Formats : jpg, png, gif, svg, webp.') }}</p>
-                            <img id="logo_preview" src="#" alt="Prévisualisation du logo" class="mt-2 max-h-40 w-auto rounded border p-1 shadow-sm" style="display: none;"/>
+                            <img id="partner_logo_preview" src="#" alt="Prévisualisation du logo" class="mt-2 max-h-40 w-auto rounded border p-1 shadow-sm" style="display: none;"/>
                             @error('logo')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -109,32 +108,4 @@
             </form>
         </div>
     </div>
-    {{--
-        Note pour l'intégration JavaScript :
-        La fonction 'previewPartnerLogo(event)' pour la prévisualisation du logo
-        devrait être définie dans un fichier JS global (ex: resources/js/admin/image-preview.js)
-        et importée via Vite.
-
-        Exemple de fonction (à adapter et à placer dans le fichier JS approprié) :
-        function previewPartnerLogo(event) {
-            const reader = new FileReader();
-            const imagePreview = document.getElementById('logo_preview'); // Assurez-vous que l'ID est unique si cette fonction est réutilisée
-            if (imagePreview) { // Vérifier si l'élément existe
-                reader.onload = function(){
-                    if (reader.readyState === 2) {
-                        imagePreview.src = reader.result;
-                        imagePreview.style.display = 'block';
-                    }
-                }
-                if(event.target.files[0]){
-                    reader.readAsDataURL(event.target.files[0]);
-                } else {
-                    imagePreview.src = '#';
-                    imagePreview.style.display = 'none';
-                }
-            }
-        }
-        // Assurez-vous que l'écouteur d'événement 'onchange' sur l'input file appelle cette fonction
-        // ou attachez l'écouteur d'événement de manière non intrusive dans votre JS global.
-    --}}
 @endsection

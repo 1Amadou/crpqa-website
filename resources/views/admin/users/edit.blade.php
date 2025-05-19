@@ -78,8 +78,8 @@
                             @enderror
                         </div>
 
-                        {{-- Lier à un profil Chercheur (Optionnel, si le rôle "Chercheur" est sélectionné) --}}
-                        <div id="researcher_assignment_section_edit" class="mt-4" style="{{ $user->hasRole('Chercheur') || (is_array(old('roles')) && in_array('Chercheur', old('roles'))) ? 'display: block;' : 'display: none;' }}">
+                        {{-- Lier à un profil Chercheur --}}
+                        <div id="researcher_assignment_section" class="mt-4" style="{{ $user->hasRole('Chercheur') || (is_array(old('roles')) && in_array('Chercheur', old('roles'))) ? 'display: block;' : 'display: none;' }}">
                             <label for="researcher_id" class="block text-sm font-medium text-gray-700">{{ __('Lier au Profil Chercheur (Optionnel)') }}</label>
                             <select name="researcher_id" id="researcher_id" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('researcher_id') border-red-500 @enderror">
                                 <option value="">{{ __('-- Ne pas lier ou dissocier --') }}</option>
@@ -113,10 +113,4 @@
             </form>
         </div>
     </div>
-    {{--
-        Note pour l'intégration JavaScript :
-        Le script pour afficher/masquer 'researcher_assignment_section_edit' basé sur la sélection du rôle "Chercheur"
-        devrait être similaire à celui de la page de création et placé dans vos fichiers JS globaux.
-        Assurez-vous que les IDs des éléments sont uniques si nécessaire.
-    --}}
 @endsection

@@ -25,8 +25,8 @@
                     <div class="md:col-span-2 space-y-6">
                         {{-- Titre --}}
                         <div>
-                            <label for="title" class="block text-sm font-medium text-gray-700">{{ __('Titre de l\'événement') }} <span class="text-red-500">*</span></label>
-                            <input type="text" name="title" id="title" value="{{ old('title') }}" required autofocus class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('title') border-red-500 @enderror" onkeyup="generateEventSlug(this.value)">
+                            <label for="event_title" class="block text-sm font-medium text-gray-700">{{ __('Titre de l\'événement') }} <span class="text-red-500">*</span></label>
+                            <input type="text" name="title" id="event_title" value="{{ old('title') }}" required autofocus class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('title') border-red-500 @enderror">
                             @error('title')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -34,8 +34,8 @@
 
                         {{-- Slug --}}
                         <div>
-                            <label for="slug" class="block text-sm font-medium text-gray-700">{{ __('Slug (URL)') }} <span class="text-red-500">*</span></label>
-                            <input type="text" name="slug" id="slug" value="{{ old('slug') }}" required class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md bg-gray-50 @error('slug') border-red-500 @enderror">
+                            <label for="event_slug" class="block text-sm font-medium text-gray-700">{{ __('Slug (URL)') }} <span class="text-red-500">*</span></label>
+                            <input type="text" name="slug" id="event_slug" value="{{ old('slug') }}" required class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md bg-gray-50 @error('slug') border-red-500 @enderror">
                             <p class="mt-1 text-xs text-gray-500">{{ __('Sera auto-généré à partir du titre si laissé vide. Utilisez des tirets et des minuscules.') }}</p>
                             @error('slug')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -45,8 +45,8 @@
                         {{-- Description --}}
                         <div>
                             <label for="description" class="block text-sm font-medium text-gray-700">{{ __('Description complète') }} <span class="text-red-500">*</span></label>
-                            <textarea name="description" id="description" rows="10" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
-                            <p class="mt-1 text-xs text-gray-500">{{ __('Nous ajouterons un éditeur de texte riche ici plus tard.') }}</p>
+                            <textarea name="description" id="description" rows="10" class="wysiwyg-editor mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
+                            {{-- <p class="mt-1 text-xs text-gray-500">{{ __('Nous ajouterons un éditeur de texte riche ici plus tard.') }}</p> --}}
                             @error('description')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -86,7 +86,6 @@
                                 <div>
                                     <label for="end_datetime_date" class="block text-sm font-medium text-gray-700">{{ __('Date de fin (Optionnel)') }}</label>
                                     <input type="date" name="end_datetime_date" id="end_datetime_date" value="{{ old('end_datetime_date') }}" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md @error('end_datetime_date') border-red-500 @enderror">
-                                    {{-- L'erreur pour after_or_equal sera affichée globalement si besoin --}}
                                 </div>
                                 {{-- Heure de fin --}}
                                 <div>
@@ -101,7 +100,6 @@
                                 <p class="text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </fieldset>
-
 
                         {{-- Lieu --}}
                         <div>
@@ -123,14 +121,12 @@
                         </div>
                     </div>
 
-                        
-
                     {{-- Colonne Latérale (1/3) --}}
                     <div class="md:col-span-1 space-y-6">
                         {{-- Image de couverture --}}
                         <div>
-                            <label for="cover_image" class="block text-sm font-medium text-gray-700">{{ __('Image de couverture (Optionnel)') }}</label>
-                            <input type="file" name="cover_image" id="cover_image" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 @error('cover_image') border-red-500 @enderror" onchange="previewEventImage(event)">
+                            <label for="event_cover_image" class="block text-sm font-medium text-gray-700">{{ __('Image de couverture (Optionnel)') }}</label>
+                            <input type="file" name="cover_image" id="event_cover_image" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 @error('cover_image') border-red-500 @enderror">
                             <p class="mt-1 text-xs text-gray-500">{{ __('Max 2MB. Formats : jpg, png, gif, svg, webp.') }}</p>
                             <img id="event_image_preview" src="#" alt="Prévisualisation de l'image" class="mt-2 max-h-48 w-auto rounded shadow-sm" style="display: none;"/>
                             @error('cover_image')
@@ -159,11 +155,6 @@
                             @error('partner_ids.*') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                         </div>
 
-
-                        
-
-                        {{-- Statut de l'événement --}}
-
                         {{-- Tags --}}
                         <div>
                             <label for="tags" class="block text-sm font-medium text-gray-700">{{ __('Tags (Optionnel)') }}</label>
@@ -172,11 +163,12 @@
                             @error('tags')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
+                        </div>
 
                         {{-- Mise en vedette --}}
                         <div class="flex items-start">
                             <div class="flex items-center h-5">
-                                <input id="is_featured" name="is_featured" type="checkbox" value="1" {{ old('is_featured') ? 'checked' : '' }} class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                <input id="is_featured" name="is_featured" type="checkbox" value="1" {{ old('is_featured', true) ? 'checked' : '' }} class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
                             </div>
                             <div class="ml-3 text-sm">
                                 <label for="is_featured" class="font-medium text-gray-700">{{ __('Mettre en vedette') }}</label>
@@ -218,6 +210,4 @@
             </form>
         </div>
     </div>
-
-    
 @endsection
