@@ -211,4 +211,6 @@ class EventController extends Controller
         return redirect()->route('admin.events.index')
                          ->with('success', 'Événement "' . $eventTitle . '" supprimé avec succès.');
     }
+
+    
 }

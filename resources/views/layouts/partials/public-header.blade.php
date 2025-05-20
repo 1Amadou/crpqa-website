@@ -1,40 +1,67 @@
 {{-- resources/views/layouts/partials/public-header.blade.php --}}
-<header class="header fixed top-0 left-0 w-full z-fixed transition-all duration-400 ease-in-out" id="header">
-    <nav class="nav container mx-auto h-[var(--header-height)] flex justify-between items-center">
+<header class="header" id="header"> {{-- Classe .header de style.css --}}
+    <nav class="nav container">
         <a href="{{ route('public.home') }}" class="nav__logo">
-            {{-- Si vous avez un logo image dans $siteSettings->logo_path --}}
-            @if(isset($siteSettings) && $siteSettings->logo_path && Storage::disk('public')->exists($siteSettings->logo_path))
-                <img src="{{ Storage::url($siteSettings->logo_path) }}" alt="{{ $siteSettings->site_name ?? 'CRPQA Logo' }}" class="h-10 md:h-12"> {{-- Ajustez la hauteur au besoin --}}
-            @else
-            {{-- Sinon, affichez le nom du site ou l'acronyme --}}
-                <span class="nav__logo-text text-2xl md:text-3xl font-extrabold tracking-tight" style="color: var(--first-color);">
-                    {{ $siteSettings->site_name_short ?? 'CRPQA' }} {{-- $siteSettings->site_name_short est une variable que vous pourriez ajouter à vos paramètres si le nom complet est trop long pour le logo texte --}}
-                </span>
-            @endif
+            {{-- <span class="nav__logo-text">{{ $siteSettings['site_name_short'] ?? $siteSettings['site_name'] ?? 'CRPQA' }}</span> --}}
         </a>
 
+        {{-- Le x-data pour Alpine est déplacé ici pour englober le menu et le toggle si Alpine gère le 'show-menu' --}}
+        {{-- Si votre JS natif dans public-main.js gère 'show-menu', x-data n'est pas nécessaire ici pour cela --}}
         <div class="nav__menu" id="nav-menu">
             <ul class="nav__list">
-                {{-- Les href seront mis à jour avec des routes Laravel nommées au fur et à mesure
-                     que nous créerons les pages publiques correspondantes.
-                     Pour l'instant, on peut utiliser des ancres si ces sections sont sur la page d'accueil,
-                     ou des liens temporaires.
-                --}}
-                <li class="nav__item"><a href="{{ route('public.home') }}#accueil" class="nav__link active-link">Accueil</a></li>
-                <li class="nav__item"><a href="{{-- route('public.about') --}}#apropos" class="nav__link">À Propos</a></li> {{-- Supposant une section #apropos sur l'accueil --}}
-                <li class="nav__item"><a href="{{-- route('public.research') --}}#recherche" class="nav__link">Recherche</a></li>
-                <li class="nav__item"><a href="{{-- route('public.publications.index') --}}#publications" class="nav__link">Publications</a></li>
-                <li class="nav__item"><a href="{{-- route('public.news.index') --}}#actualites" class="nav__link">Actualités</a></li>
-                <li class="nav__item"><a href="{{-- route('public.contact') --}}#contact-footer" class="nav__link">Contact</a></li> {{-- Lien vers l'ancre du footer --}}
+                <li class="nav__item">
+                    <a href="{{ route('public.home') }}" class="nav__link {{ request()->routeIs('public.home') ? 'active-link' : '' }}">Accueil</a>
+                </li>
+                <li class="nav__item">
+                    <a href="{{ route('public.page', ['staticPage' => 'a-propos']) }}" class="nav__link {{ (request()->routeIs('public.page') && request()->route('staticPage') && request()->route('staticPage')->slug == 'a-propos') ? 'active-link' : '' }}">À Propos</a>
+                </li>
+
+                {{-- Menu déroulant Vie du Centre - Utilisation d'Alpine pour le dropdown desktop --}}
+                {{-- Pour mobile, le CSS devra peut-être transformer cela en "accordéon" ou liens directs --}}
+                <li class="nav__item nav__item--dropdown" x-data="{ open: false }" @mouseleave="open = false">
+                    <button @mouseover="open = true" @click.prevent="open = !open" type="button" class="nav__link nav__link--button {{ (request()->routeIs('public.news.index') || request()->routeIs('public.news.show') || request()->routeIs('public.events.index') || request()->routeIs('public.events.show') ) ? 'active-link' : '' }}">
+                        Vie du Centre <ion-icon name="chevron-down-outline" class="nav__link-arrow" :class="{'rotate-180': open}"></ion-icon>
+                    </button>
+                    <ul x-show="open" x-cloak x-transition class="nav__dropdown">
+                        <li><a href="{{ route('public.news.index') }}" class="nav__dropdown-link {{ request()->routeIs('public.news.index') || request()->routeIs('public.news.show') ? 'active-dropdown-link' : '' }}">Actualités</a></li>
+                        <li><a href="{{ route('public.events.index') }}" class="nav__dropdown-link {{ request()->routeIs('public.events.index') || request()->routeIs('public.events.show') ? 'active-dropdown-link' : '' }}">Événements</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav__item">
+                    <a href="{{ route('public.publications.index') }}" class="nav__link {{ (request()->routeIs('public.publications.index') || request()->routeIs('public.publications.show')) ? 'active-link' : '' }}">Publications</a>
+                </li>
+
+                <li class="nav__item nav__item--dropdown" x-data="{ open: false }" @mouseleave="open = false">
+                    <button @mouseover="open = true" @click.prevent="open = !open" type="button" class="nav__link nav__link--button {{ (request()->routeIs('public.research_axes.index') || request()->routeIs('public.research_axes.show') || request()->routeIs('public.researchers.index') || request()->routeIs('public.researchers.show')) ? 'active-link' : '' }}">
+                        Recherche & Équipe <ion-icon name="chevron-down-outline" class="nav__link-arrow" :class="{'rotate-180': open}"></ion-icon>
+                    </button>
+                    <ul x-show="open" x-cloak x-transition class="nav__dropdown">
+                        <li><a href="{{ route('public.research_axes.index') }}" class="nav__dropdown-link {{ request()->routeIs('public.research_axes.index') || request()->routeIs('public.research_axes.show') ? 'active-dropdown-link' : '' }}">Domaines de Recherche</a></li>
+                        <li><a href="{{ route('public.researchers.index') }}" class="nav__dropdown-link {{ request()->routeIs('public.researchers.index') || request()->routeIs('public.researchers.show') ? 'active-dropdown-link' : '' }}">Notre Équipe</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav__item">
+                    <a href="{{ route('public.partners.index') }}" class="nav__link {{ request()->routeIs('public.partners.index') ? 'active-link' : '' }}">Partenaires</a>
+                </li>
+                {{-- Le bouton Contact est maintenant dans .nav__buttons pour desktop, et peut être répété ici pour mobile si besoin --}}
+                 <li class="nav__item sm:hidden"> {{-- Uniquement pour le menu mobile si .nav__contact-button est caché sur sm --}}
+                    <a href="{{ route('public.contact.form') }}" class="nav__link button button--small button--outline">
+                        Contactez-nous
+                    </a>
+                </li>
             </ul>
             <div class="nav__close" id="nav-close">
                 <ion-icon name="close-outline"></ion-icon>
             </div>
         </div>
 
-        <div class="nav__buttons flex items-center">
-            {{-- Le bouton "Nous Contacter" peut aussi pointer vers l'ancre du footer ou une page contact dédiée --}}
-            <a href="{{-- route('public.contact') --}}#contact-footer" class="button button--ghost button--small nav__contact-button hidden md:inline-flex">Nous Contacter</a>
+        <div class="nav__buttons">
+            {{-- Bouton Contact principal pour Desktop, votre CSS le cache sur mobile --}}
+            <a href="{{ route('public.contact.form') }}" class="button button--small nav__contact-button">
+                Contactez-nous
+            </a>
             <div class="nav__toggle" id="nav-toggle">
                 <ion-icon name="menu-outline"></ion-icon>
             </div>

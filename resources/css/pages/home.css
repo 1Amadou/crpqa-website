@@ -1,0 +1,179 @@
+/* Styles spécifiques pour la page d'accueil (home.blade.php) */
+/* Ces styles complètent votre style.css principal. */
+
+/* 1. Ajustements Généraux pour la Page d'Accueil */
+/* ============================================= */
+
+/* Si la section héros de la page d'accueil a besoin d'une hauteur minimale différente
+   ou d'un padding légèrement ajusté par rapport au .hero global.
+   Actuellement, le .hero de votre style.css semble bien adapté.
+*/
+/*
+#accueil.hero {
+    min-height: 95vh; /* Exemple si besoin d'ajuster la hauteur spécifique à l'accueil */
+    /* padding-bottom: 5rem; /* Si le padding global de .hero ne suffit pas */
+/* }
+*/
+
+/* Description de section spécifique à l'accueil (si .home-section-description n'est pas déjà défini ou a besoin d'un override) */
+/* Votre style.css principal n'avait pas .home-section-description, mais le blade l'utilise.
+   Nous l'avions ajouté dans notre proposition d'amélioration de style.css.
+   S'il n'est pas dans votre style.css final, vous l'ajouteriez : */
+.home-section-description {
+    font-size: 1.1rem; /* var(--normal-font-size) ou text-lg */
+    color: var(--text-color-light);
+    max-width: 700px; /* Limite la largeur pour une meilleure lisibilité */
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: var(--sp-2-5); /* Ajusté pour plus d'espace avant les grilles de cartes */
+    text-align: center;
+    line-height: 1.7;
+}
+
+
+/* 2. Section Héros (Spécificités Accueil) */
+/* ======================================= */
+/* Les styles principaux du héros sont dans .hero de votre style.css.
+   Ici, uniquement des micro-ajustements si nécessaire.
+*/
+#accueil .hero__title {
+    /* Peut-être un text-shadow plus prononcé si l'image de fond est très claire/variable */
+    /* text-shadow: 0 2px 15px rgba(0,0,0,0.3); */
+}
+
+#accueil .hero__buttons .button {
+    /* Si les boutons du héros d'accueil doivent être légèrement plus grands
+       que les .hero__button standards de votre style.css. */
+    /* padding: 1.1rem 2.8rem; */
+    /* font-size: 1.05rem; */
+}
+
+/* 3. Section "À Propos" (Spécificités Accueil) */
+/* =========================================== */
+#apropos-section-home .about__title {
+    /* Si le titre h2 de cette section "À Propos" sur l'accueil
+       doit être différent du .section__title standard ou du .about__title général. */
+    /* font-size: var(--h2-font-size); */ /* Déjà géré par .section__title */
+}
+
+#apropos-section-home .about__description {
+    /* color: var(--text-color); */ /* Pour un texte un peu plus foncé que le text-color-light standard des descriptions */
+    /* line-height: 1.75; */ /* Si besoin d'un interligne spécifique ici */
+}
+
+/* 4. Section Domaines de Recherche (Spécificités Accueil) */
+/* ====================================================== */
+#recherche-section-home .research__card {
+    /* Si les cartes de recherche sur l'accueil ont un style légèrement différent
+       des .research__card génériques (par exemple, moins de contenu, donc moins de hauteur min). */
+    /* min-height: auto; /* Si la description est plus courte sur l'accueil */
+}
+
+#recherche-section-home .research__card-description {
+    /* min-height: 70px; /* Ajuster si la hauteur des descriptions varie beaucoup sur l'accueil */
+}
+
+/* Pour gérer la couleur de fond et de l'icône des axes de recherche si dynamique et non géré par classes */
+/* Le style en ligne dans le Blade gère déjà cela :
+   style=" @if($axis->color_hex) background-color: {{ \App\Helpers\ColorHelper::hexToRgba($axis->color_hex, 0.1) }}; @endif "
+   style=" @if($axis->color_hex) color: {{ $axis->color_hex }}; @endif "
+   Il n'y a donc généralement pas besoin de CSS additionnel ici, sauf si vous voulez un fallback.
+*/
+.research__card-icon-wrapper { /* Fallback si aucune couleur n'est définie */
+    /* background-color: rgba(var(--accent-color-cyan-rgb), 0.1); /* Si vous définissez --accent-color-cyan-rgb comme 0,191,255 */
+}
+.research__card-icon { /* Fallback */
+    /* color: var(--accent-color-cyan); */
+}
+/* Assurez-vous que les SVG injectés via {!! $axis->icon_svg !!}
+   ont une taille définie (par exemple via une classe, ou width/height sur le SVG lui-même).
+   Ou ajoutez une règle : */
+.research__card-icon-wrapper svg {
+    width: 3rem; /* Taille par défaut pour les SVG injectés */
+    height: 3rem;
+    /* La couleur devrait être héritée ou définie dans le SVG. Si ce n'est pas le cas : */
+    /* color: currentColor; ou une couleur spécifique */
+}
+
+
+/* 5. Section Impact (Spécificités Accueil) */
+/* ========================================= */
+#impact-section-home .impact__data .button--white {
+    /* Si le bouton "Notre Vision Stratégique" doit avoir un style distinctif */
+    /* box-shadow: 0 5px 15px rgba(0,0,0,0.15); */ /* Ombre plus prononcée sur fond sombre */
+}
+
+/* 6. Section Actualités (Spécificités Accueil) */
+/* =========================================== */
+/* La classe .home-news-card__image a été ajoutée dans la balise <style> du Blade
+   pour une hauteur spécifique des images d'actualités sur l'accueil.
+   Si vous préférez la mettre ici :
+*/
+.home-news-card__image {
+    height: 200px; /* Hauteur d'image pour les cartes d'actualité sur l'accueil */
+    /* width: 100%; // Déjà dans news__img */
+    /* object-fit: cover; // Déjà dans news__img */
+}
+
+#actualites-section-home .news__title {
+    /* min-height: calc(1.4em * 2); /* Assure l'espace pour 2 lignes, déjà dans votre .news__title */
+    /* Si vous voulez forcer une hauteur fixe différente sur l'accueil : */
+    /* height: 2.8em; /* Environ 2 lignes */
+    /* overflow: hidden; */ /* Assurez-vous que c'est bien géré */
+}
+
+#actualites-section-home .news__description {
+    /* min-height: calc(1.6em * 3); /* Assure l'espace pour 3 lignes, déjà dans votre .news__description */
+    /* Si vous voulez forcer une hauteur fixe différente sur l'accueil : */
+    /* height: 4.8em; /* Environ 3 lignes */
+    /* overflow: hidden; */
+}
+
+.news__category-separator {
+    margin: 0 0.5em;
+}
+.news__category {
+    font-weight: var(--font-semi-bold);
+}
+
+
+/* 7. Section Événements (Spécificités Accueil) */
+/* ============================================ */
+#evenements-section-home .event__item {
+    /* Si les cartes d'événements sur l'accueil doivent être plus compactes */
+    /* padding: var(--sp-1-25); /* Padding légèrement réduit */
+}
+
+#evenements-section-home .event__title {
+    /* font-size: 1.15rem; /* Titre légèrement plus petit si plus compact */
+}
+
+
+/* 8. Section Rejoindre/Collaboration (CTA Accueil) */
+/* ================================================= */
+/* Les styles de .join de votre style.css sont très complets.
+   Peu d'ajustements devraient être nécessaires ici.
+*/
+#rejoindre-section-home .join__title {
+    /* Si le titre du CTA sur l'accueil doit être particulièrement grand */
+    /* font-size: calc(var(--h2-font-size) + 0.2rem); */
+}
+
+/* 9. Section Partenaires (Spécificités Accueil) */
+/* ============================================= */
+#partenaires-section-home .partner__logo {
+    /* max-height: 55px; /* Si les logos doivent être légèrement plus petits sur l'accueil */
+    /* filter: grayscale(60%); /* Ajustement du filtre si besoin */
+}
+
+
+/* Animations AOS - Si vous voulez personnaliser les transitions par défaut de AOS
+   pour des éléments spécifiques de la page d'accueil.
+   Par exemple, pour les cartes qui apparaissent :
+*/
+[data-aos="fade-up"].news__card,
+[data-aos="fade-up"].research__card,
+[data-aos="fade-up"].event__item {
+    /* transition-duration: 0.6s !important; /* Si vous voulez changer la durée d'AOS */
+    /* transition-timing-function: ease-out-cubic !important; /* Si vous voulez changer la courbe */
+}

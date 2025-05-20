@@ -1,10 +1,17 @@
 /* resources/css/app.css */
+@import 'style.css'; /* Votre fichier principal */
+@import 'pages/home.css'; /* Styles spécifiques à l'accueil */
 
-/* 1. Importation des directives de base de Tailwind */
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+
+body {
+    /* font-family et color sont déjà définis dans style.css */
+    /* Tailwind peut être utilisé pour des classes comme antialiased si style.css ne le fait pas */
+    @apply antialiased bg-gray-50; /* bg-gray-50 est un exemple, style.css a #f4f7f6 */
+}
 /*=============== GOOGLE FONTS ===============*/
 /* Importé dans le HTML via <link> */
 
@@ -1605,3 +1612,403 @@ img { max-width: 100%; height: auto; display: block; }
     .appel-quantique__buttons .button { width: 100%; max-width: 300px; }
 }
 
+/* Dans resources/css/style.css ou un fichier importé */
+
+/* ... (styles existants pour .header, .nav, .nav__link etc.) ... */
+
+.nav__link-arrow { /* Pour la flèche des dropdowns */
+    transition: transform 0.2s ease-in-out;
+    font-size: 0.9em; /* Ajuster la taille si besoin */
+}
+
+.nav__dropdown {
+    /* Styles de base pour les menus déroulants */
+    /* Votre code Alpine.js utilise déjà des classes Tailwind pour shadow, bg, ring.
+       Vous pouvez les remplacer par des styles CSS purs ici si vous préférez. */
+    /* Exemple :
+    background-color: var(--body-color);
+    border-radius: var(--radius-md, 0.375rem);
+    box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05));
+    border: 1px solid var(--border-color, #e2e8f0);
+    min-width: 200px; /* ou la largeur souhaitée */
+    z-index: var(--z-dropdown); /* Assurez-vous que c'est au-dessus du contenu */
+}
+
+.nav__dropdown-link {
+    display: block;
+    padding: var(--sp-0-75) var(--sp-1-5); /* ex: 0.5rem 1rem */
+    font-size: var(--small-font-size); /* ex: 0.9rem */
+    color: var(--text-color); /* Ou var(--title-color) */
+    font-family: var(--body-font); /* Ou var(--title-font) si vous préférez pour les liens de nav */
+    font-weight: var(--font-semi-bold, 500);
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    white-space: nowrap;
+}
+.nav__dropdown-link:hover {
+    background-color: var(--container-color); /* Ou une couleur d'accentuation légère */
+    color: var(--accent-color-cyan);
+}
+.nav__dropdown-link.active-dropdown-link { /* Style pour le lien actif dans le dropdown */
+    background-color: rgba(0, 191, 255, 0.1); /* Fond cyan léger */
+    color: var(--accent-color-cyan-alt);
+    font-weight: var(--font-bold);
+}
+
+/* Assurer la cohérence des couleurs :
+   Les classes 'text-crpqa-blue', 'hover:text-crpqa-blue-dark', 'bg-crpqa-blue-light'
+   utilisées dans le Blade original pour les liens actifs et survol
+   devraient être mappées aux variables CSS de votre style.css.
+   Ex: text-crpqa-blue -> color: var(--first-color);
+       bg-crpqa-blue-light -> background-color: var(--accent-color-cyan) avec opacité ou une nouvelle variable.
+   Les classes active-link et :hover sur .nav__link gèrent déjà cela avec --accent-color-cyan.
+*/
+
+/* Ajustements pour le menu mobile si Alpine.js gère l'ouverture/fermeture
+   La classe .show-menu doit faire apparaître .nav__menu.
+   Votre style.css a :
+   .show-menu { right: 0; }
+   Ceci est correct si .nav__menu est positionné avec `right: -100%;` initialement.
+*/
+@media screen and (max-width: 992px) { /* Breakpoint de votre style.css */
+    .nav__menu {
+        /* Les styles pour le positionnement, fond, ombre sont dans votre style.css.
+           Assurez-vous que `right: -100%;` est là et `transition` pour l'effet. */
+    }
+    .nav__menu.show-menu { /* Appliqué par Alpine :class="{ 'show-menu': mobileMenuOpen }" */
+        right: 0;
+    }
+    .nav__list {
+        /* flex-direction: column; row-gap: var(--sp-2); /* Déjà dans votre style.css */
+    }
+    .nav__link {
+        /* font-size: var(--h3-font-size); /* Déjà dans votre style.css */
+        display: block; /* Pour que le lien prenne toute la largeur dans le menu mobile */
+        padding: var(--sp-1) var(--sp-1-5); /* Padding plus large pour le tactile */
+    }
+    .nav__item .nav__dropdown { /* Comportement du dropdown en mobile */
+        position: static; /* Ou relatif, pour qu'il ne soit pas 'absolute' */
+        width: 100%;
+        box-shadow: none;
+        border: none;
+        margin-top: 0;
+        padding-left: var(--sp-1-5); /* Indentation pour les sous-menus */
+    }
+    .nav__item .nav__dropdown-link {
+        padding: var(--sp-0-75) var(--sp-1);
+    }
+    /* Si les boutons de dropdown sont des <button class="nav__link">,
+       il faudra peut-être un style pour qu'ils agissent comme des "accordéons" sur mobile
+       plutôt que des dropdowns au survol/clic qui masquent le reste.
+       Une solution simple est de toujours afficher le contenu du dropdown en mobile si "open" est vrai.
+    */
+}
+
+/* Styles spécifiques pour la page d'accueil (home.blade.php) */
+/* Ces styles complètent votre style.css principal. */
+
+/* 1. Ajustements Généraux pour la Page d'Accueil */
+/* ============================================= */
+
+/* Si la section héros de la page d'accueil a besoin d'une hauteur minimale différente
+   ou d'un padding légèrement ajusté par rapport au .hero global.
+   Actuellement, le .hero de votre style.css semble bien adapté.
+*/
+/*
+#accueil.hero {
+    min-height: 95vh; /* Exemple si besoin d'ajuster la hauteur spécifique à l'accueil */
+    /* padding-bottom: 5rem; /* Si le padding global de .hero ne suffit pas */
+/* }
+*/
+
+/* Description de section spécifique à l'accueil (si .home-section-description n'est pas déjà défini ou a besoin d'un override) */
+/* Votre style.css principal n'avait pas .home-section-description, mais le blade l'utilise.
+   Nous l'avions ajouté dans notre proposition d'amélioration de style.css.
+   S'il n'est pas dans votre style.css final, vous l'ajouteriez : */
+.home-section-description {
+    font-size: 1.1rem; /* var(--normal-font-size) ou text-lg */
+    color: var(--text-color-light);
+    max-width: 700px; /* Limite la largeur pour une meilleure lisibilité */
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: var(--sp-2-5); /* Ajusté pour plus d'espace avant les grilles de cartes */
+    text-align: center;
+    line-height: 1.7;
+}
+
+
+/* 2. Section Héros (Spécificités Accueil) */
+/* ======================================= */
+/* Les styles principaux du héros sont dans .hero de votre style.css.
+   Ici, uniquement des micro-ajustements si nécessaire.
+*/
+#accueil .hero__title {
+    /* Peut-être un text-shadow plus prononcé si l'image de fond est très claire/variable */
+    /* text-shadow: 0 2px 15px rgba(0,0,0,0.3); */
+}
+
+#accueil .hero__buttons .button {
+    /* Si les boutons du héros d'accueil doivent être légèrement plus grands
+       que les .hero__button standards de votre style.css. */
+    /* padding: 1.1rem 2.8rem; */
+    /* font-size: 1.05rem; */
+}
+
+/* 3. Section "À Propos" (Spécificités Accueil) */
+/* =========================================== */
+#apropos-section-home .about__title {
+    /* Si le titre h2 de cette section "À Propos" sur l'accueil
+       doit être différent du .section__title standard ou du .about__title général. */
+    /* font-size: var(--h2-font-size); */ /* Déjà géré par .section__title */
+}
+
+#apropos-section-home .about__description {
+    /* color: var(--text-color); */ /* Pour un texte un peu plus foncé que le text-color-light standard des descriptions */
+    /* line-height: 1.75; */ /* Si besoin d'un interligne spécifique ici */
+}
+
+/* 4. Section Domaines de Recherche (Spécificités Accueil) */
+/* ====================================================== */
+#recherche-section-home .research__card {
+    /* Si les cartes de recherche sur l'accueil ont un style légèrement différent
+       des .research__card génériques (par exemple, moins de contenu, donc moins de hauteur min). */
+    /* min-height: auto; /* Si la description est plus courte sur l'accueil */
+}
+
+#recherche-section-home .research__card-description {
+    /* min-height: 70px; /* Ajuster si la hauteur des descriptions varie beaucoup sur l'accueil */
+}
+
+/* Pour gérer la couleur de fond et de l'icône des axes de recherche si dynamique et non géré par classes */
+/* Le style en ligne dans le Blade gère déjà cela :
+   style=" @if($axis->color_hex) background-color: {{ \App\Helpers\ColorHelper::hexToRgba($axis->color_hex, 0.1) }}; @endif "
+   style=" @if($axis->color_hex) color: {{ $axis->color_hex }}; @endif "
+   Il n'y a donc généralement pas besoin de CSS additionnel ici, sauf si vous voulez un fallback.
+*/
+.research__card-icon-wrapper { /* Fallback si aucune couleur n'est définie */
+    /* background-color: rgba(var(--accent-color-cyan-rgb), 0.1); /* Si vous définissez --accent-color-cyan-rgb comme 0,191,255 */
+}
+.research__card-icon { /* Fallback */
+    /* color: var(--accent-color-cyan); */
+}
+/* Assurez-vous que les SVG injectés via {!! $axis->icon_svg !!}
+   ont une taille définie (par exemple via une classe, ou width/height sur le SVG lui-même).
+   Ou ajoutez une règle : */
+.research__card-icon-wrapper svg {
+    width: 3rem; /* Taille par défaut pour les SVG injectés */
+    height: 3rem;
+    /* La couleur devrait être héritée ou définie dans le SVG. Si ce n'est pas le cas : */
+    /* color: currentColor; ou une couleur spécifique */
+}
+
+
+/* 5. Section Impact (Spécificités Accueil) */
+/* ========================================= */
+#impact-section-home .impact__data .button--white {
+    /* Si le bouton "Notre Vision Stratégique" doit avoir un style distinctif */
+    /* box-shadow: 0 5px 15px rgba(0,0,0,0.15); */ /* Ombre plus prononcée sur fond sombre */
+}
+
+/* 6. Section Actualités (Spécificités Accueil) */
+/* =========================================== */
+/* La classe .home-news-card__image a été ajoutée dans la balise <style> du Blade
+   pour une hauteur spécifique des images d'actualités sur l'accueil.
+   Si vous préférez la mettre ici :
+*/
+.home-news-card__image {
+    height: 200px; /* Hauteur d'image pour les cartes d'actualité sur l'accueil */
+    /* width: 100%; // Déjà dans news__img */
+    /* object-fit: cover; // Déjà dans news__img */
+}
+
+#actualites-section-home .news__title {
+    /* min-height: calc(1.4em * 2); /* Assure l'espace pour 2 lignes, déjà dans votre .news__title */
+    /* Si vous voulez forcer une hauteur fixe différente sur l'accueil : */
+    /* height: 2.8em; /* Environ 2 lignes */
+    /* overflow: hidden; */ /* Assurez-vous que c'est bien géré */
+}
+
+#actualites-section-home .news__description {
+    /* min-height: calc(1.6em * 3); /* Assure l'espace pour 3 lignes, déjà dans votre .news__description */
+    /* Si vous voulez forcer une hauteur fixe différente sur l'accueil : */
+    /* height: 4.8em; /* Environ 3 lignes */
+    /* overflow: hidden; */
+}
+
+.news__category-separator {
+    margin: 0 0.5em;
+}
+.news__category {
+    font-weight: var(--font-semi-bold);
+}
+
+
+/* 7. Section Événements (Spécificités Accueil) */
+/* ============================================ */
+#evenements-section-home .event__item {
+    /* Si les cartes d'événements sur l'accueil doivent être plus compactes */
+    /* padding: var(--sp-1-25); /* Padding légèrement réduit */
+}
+
+#evenements-section-home .event__title {
+    /* font-size: 1.15rem; /* Titre légèrement plus petit si plus compact */
+}
+
+
+/* 8. Section Rejoindre/Collaboration (CTA Accueil) */
+/* ================================================= */
+/* Les styles de .join de votre style.css sont très complets.
+   Peu d'ajustements devraient être nécessaires ici.
+*/
+#rejoindre-section-home .join__title {
+    /* Si le titre du CTA sur l'accueil doit être particulièrement grand */
+    /* font-size: calc(var(--h2-font-size) + 0.2rem); */
+}
+
+/* 9. Section Partenaires (Spécificités Accueil) */
+/* ============================================= */
+#partenaires-section-home .partner__logo {
+    /* max-height: 55px; /* Si les logos doivent être légèrement plus petits sur l'accueil */
+    /* filter: grayscale(60%); /* Ajustement du filtre si besoin */
+}
+
+
+/* Animations AOS - Si vous voulez personnaliser les transitions par défaut de AOS
+   pour des éléments spécifiques de la page d'accueil.
+   Par exemple, pour les cartes qui apparaissent :
+*/
+[data-aos="fade-up"].news__card,
+[data-aos="fade-up"].research__card,
+[data-aos="fade-up"].event__item {
+    /* transition-duration: 0.6s !important; /* Si vous voulez changer la durée d'AOS */
+    /* transition-timing-function: ease-out-cubic !important; /* Si vous voulez changer la courbe */
+}
+
+/* Dans resources/css/style.css ou un fichier importé */
+
+/* ... (styles existants pour .footer, .footer__container etc.) ... */
+
+.footer__content {
+    /* Si chaque bloc de contenu dans le footer a besoin de styles spécifiques,
+       comme un padding interne si la grille a un grand `gap`.
+       Souvent, ce n'est pas nécessaire si le `gap` de la grille gère bien l'espacement. */
+}
+
+.footer__logo { /* Si le lien du logo dans le footer a besoin de styles */
+    display: inline-block; /* Pour que margin-bottom sur .footer__logo-text fonctionne bien */
+    margin-bottom: var(--sp-1); /* Correspond à .footer__logo-text margin-bottom */
+}
+
+.footer__bottom {
+    border-top: 1px solid var(--first-color-light); /* Ligne de séparation pour le copyright */
+    padding-top: var(--sp-2);
+    margin-top: var(--sp-2); /* Espace au-dessus de la ligne de copyright */
+}
+/* Si vous préférez la bordure sur footer__container comme dans votre CSS original,
+   .footer__bottom n'a pas besoin de border-top et le padding-bottom de footer__container
+   peut être retiré pour que le copyright soit directement après. */
+
+
+/* JavaScript pour le scroll-up (votre style.css le prévoit) */
+/* function scrollUp() {
+    const scrollUp = document.getElementById('scroll-up');
+    if (this.scrollY >= 350) {
+        scrollUp.classList.add('show-scroll');
+    } else {
+        scrollUp.classList.remove('show-scroll');
+    }
+}
+window.addEventListener('scroll', scrollUp);
+*/
+/* Potentiel CSS pour les dropdowns dans style.css */
+.nav__item--dropdown { position: relative; }
+.nav__link--button { background: none; border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; }
+.nav__link-arrow { font-size: 0.8em; margin-left: var(--sp-0-25); transition: transform 0.2s; }
+.nav__link-arrow.rotate-180 { transform: rotate(180deg); }
+
+.nav__dropdown {
+    position: absolute;
+    top: 100%; /* Se positionne sous le lien parent */
+    left: 0;
+    background-color: var(--body-color);
+    border-radius: 0 var(--radius-md, 0.375rem) var(--radius-md, 0.375rem) var(--radius-md, 0.375rem); /* Arrondi */
+    box-shadow: var(--shadow-medium);
+    z-index: var(--z-dropdown);
+    min-width: 220px; /* Largeur minimale */
+    padding: var(--sp-0-5) 0; /* Espace vertical interne */
+    list-style: none;
+    opacity: 0; visibility: hidden; transform: translateY(10px); /* Pour transition */
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+}
+.nav__item--dropdown[x-data*="open: true"] .nav__dropdown { /* Ou une classe appliquée par x-show */
+    opacity: 1; visibility: visible; transform: translateY(0);
+}
+.nav__dropdown-link {
+    display: block;
+    padding: var(--sp-0-75) var(--sp-1-5);
+    font-size: var(--small-font-size);
+    color: var(--title-color);
+    transition: var(--transition-fast);
+}
+.nav__dropdown-link:hover, .nav__dropdown-link.active-dropdown-link {
+    background-color: var(--container-color);
+    color: var(--accent-color-cyan);
+}
+.nav__dropdown-link.active-dropdown-link { font-weight: var(--font-semi-bold); }
+
+/* En mode mobile (dans la media query @media screen and (max-width: 992px)) */
+.nav__menu .nav__item--dropdown .nav__dropdown {
+    position: static; /* Devient partie du flux normal */
+    box-shadow: none;
+    border-top: 1px solid var(--border-color); /* Séparateur */
+    margin-left: var(--sp-1-5); /* Indentation */
+    padding: var(--sp-0-5) 0;
+    width: auto; /* Prend la largeur du parent */
+    border-radius:0;
+    opacity: 1; visibility: visible; transform: none; /* Toujours visible si x-show est vrai */
+}
+.nav__menu .nav__item--dropdown .nav__dropdown-link {
+    padding: var(--sp-0-75) var(--sp-1); /* Ajustement padding mobile */
+}
+
+/* Dans resources/css/style.css */
+
+.footer__content {
+    /* Peut-être un min-height si vous voulez que toutes les colonnes aient une hauteur similaire
+       ou laisser le contenu dicter la hauteur. */
+}
+.footer__brand { /* Colonne avec logo/description */
+    /* Styles spécifiques si besoin */
+}
+.footer__contact { /* Colonne de contact */
+    /* Styles spécifiques si besoin */
+}
+.footer__contact-button { /* Pour le bouton "Envoyer un message" dans le footer */
+    /* S'il doit être différent des .button--small .button--outline standards */
+    /* Exemple: prendre toute la largeur sur mobile */
+    /* @media screen and (max-width: 576px) { width: 100%; } */
+}
+
+/* Styles pour les liens légaux et crédits sous la ligne de copyright */
+.footer__bottom {
+    /* ... (styles existants pour la bordure et le padding) ... */
+    text-align: center; /* Centrer tout le contenu de cette zone */
+}
+.footer__sublinks-nav {
+    margin-top: var(--sp-0-5);
+    display: flex;
+    flex-wrap: wrap; /* Pour les petits écrans */
+    justify-content: center;
+    gap: var(--sp-0-5) var(--sp-1); /* Espace vertical et horizontal */
+}
+.footer__sublink { /* Déjà défini dans votre style.css, juste vérifier la cohérence */
+    font-size: var(--smaller-font-size);
+    color: var(--text-color-light); /* Ou --second-color si le footer est très sombre */
+    /* margin: 0 var(--sp-0-5); */ /* Le gap s'en charge */
+}
+.footer__sublink:hover { color: var(--accent-color-cyan); }
+
+.footer__credits {
+    font-size: calc(var(--smaller-font-size) - 0.05rem); /* Encore plus petit */
+    color: var(--text-color-light); /* Ou une version plus estompée de --second-color */
+    opacity: 0.8;
+}

@@ -1,68 +1,74 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}"> {{-- Utile si vous faites des appels AJAX POST plus tard --}}
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    {{-- Le titre et la méta-description seront définis par chaque vue enfant ou utiliseront des valeurs par défaut --}}
-    <title>@yield('title', $siteSettings->site_name ?? config('app.name', 'CRPQA'))</title>
-    <meta name="description" content="@yield('meta_description', $siteSettings->meta_description_default ?? 'Centre de Recherche en Physique Quantique et ses Applications - CRPQA')">
-    {{-- Vous pourrez ajouter une section @stack('meta_tags') pour d'autres méta spécifiques à la page --}}
+    <title>@yield('title', $siteSettings['site_name_short'] ?? $siteSettings['site_name'] ?? config('app.name', 'CRPQA'))</title>
+    <meta name="description" content="@yield('meta_description', $siteSettings['site_tagline'] ?? 'Centre de Recherche en Physique Quantique et ses Applications.')">
 
-    {{-- Favicon (depuis les paramètres du site ou un placeholder) --}}
-    @if(isset($siteSettings) && $siteSettings->favicon_path && Storage::disk('public')->exists($siteSettings->favicon_path))
-        <link rel="icon" href="{{ Storage::url($siteSettings->favicon_path) }}" type="image/png"> {{-- Adaptez le type si votre favicon est .ico ou .svg --}}
-    @else
-        <link rel="icon" href="{{ asset('assets/favicon.png') }}" type="image/png"> {{-- Placeholder basé sur votre HTML (suppose un dossier public/assets) --}}
-    @endif
+    {{-- Meta tags Open Graph & Twitter (essentiels pour un look pro sur les réseaux) --}}
+    <meta property="og:title" content="@yield('og_title', $siteSettings['site_name_short'] ?? $siteSettings['site_name'] ?? config('app.name', 'CRPQA'))">
+    <meta property="og:description" content="@yield('og_description', $siteSettings['site_tagline'] ?? 'Centre de Recherche en Physique Quantique et ses Applications.')">
+    <meta property="og:type" content="@yield('og_type', 'website')">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:image" content="@yield('og_image', !empty($siteSettings['og_image_url']) ? Storage::url($siteSettings['og_image_url']) : asset('assets/crpqa_og_default.jpg'))">
+    {{-- Assurez-vous que 'og_image_url' est stocké correctement (ex: chemin relatif depuis public/storage) et que crpqa_og_default.jpg existe --}}
 
-    {{-- Polices Google Fonts (celles de votre HTML) --}}
+    <meta name="twitter:card" content="summary_large_image">
+    {{-- <meta name="twitter:site" content="@VotreCompteTwitter"> --}}
+    <meta name="twitter:title" content="@yield('og_title', $siteSettings['site_name_short'] ?? $siteSettings['site_name'] ?? config('app.name', 'CRPQA'))">
+    <meta name="twitter:description" content="@yield('og_description', $siteSettings['site_tagline'] ?? 'Centre de Recherche en Physique Quantique et ses Applications.')">
+    <meta name="twitter:image" content="@yield('og_image', !empty($siteSettings['og_image_url']) ? Storage::url($siteSettings['og_image_url']) : asset('assets/crpqa_og_default.jpg'))">
+
+    {{-- Favicons (simplifié, mais vous pouvez étendre avec realfavicongenerator.net) --}}
+    <link rel="icon" href="{{ !empty($siteSettings['favicon_url']) ? Storage::url($siteSettings['favicon_url']) : asset('assets/favicon.png') }}" type="image/png">
+    <link rel="apple-touch-icon" href="{{ !empty($siteSettings['apple_touch_icon_url']) ? Storage::url($siteSettings['apple_touch_icon_url']) : asset('assets/apple-touch-icon.png') }}">
+
+    {{-- Polices Google (déjà dans votre style.css, mais le preconnect est utile ici) --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-    
-    {{-- Ionicons via CDN (comme dans votre HTML - simple et efficace pour commencer) --}}
-    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js" defer></script>
-    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js" defer></script>
+    {{-- Le lien <link href="https://fonts.googleapis.com/css2?..." est déjà dans votre style.css fourni (au début)
+        ou vous pouvez le laisser ici si style.css ne l'importe pas directement. Pour éviter la duplication,
+        il est mieux de le charger une seule fois. Si votre style.css le fait, supprimez le lien <link href=...> d'ici.
+        Je suppose que votre style.css actuel ne l'importe PAS et que vous le gardez ici.
+    --}}
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
 
-    {{-- AOS CSS sera importé via app.js (grâce à l'import dans public-main.js), donc le lien CDN n'est plus nécessaire ici --}}
-    {{-- <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" /> --}}
+    {{-- CSS & JS via Vite --}}
+    {{-- app.css importera votre style.css principal ET le CSS d'AOS --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/public-main.js'])
 
-    {{-- Notre CSS principal (incluant Tailwind et votre style.css) et JS principal (incluant votre script.js et AOS) via Vite --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-
-    {{-- Permet aux vues enfants d'ajouter des styles CSS spécifiques si nécessaire --}}
     @stack('styles')
 </head>
-<body class="font-body text-crpqa-text bg-crpqa-body antialiased"> {{-- Utilisation des classes de la charte (via Tailwind config ou votre style.css) --}}
-    
-    {{-- Wrapper principal de l'application --}}
-    <div id="app-public" class="flex flex-col min-h-screen"> {{-- ID changé pour éviter conflit avec #app de Vue/React si un jour utilisé --}}
+<body class="antialiased"> {{-- Les styles de body (police, couleur, fond) viennent de votre style.css --}}
+    {{-- La variable --header-height doit être définie dans :root de votre style.css --}}
 
-        {{-- Inclusion du Header --}}
+    <div id="crpqa-app" class="flex flex-col min-h-screen">
         @include('layouts.partials.public-header')
 
-        {{-- Contenu principal de la page spécifique --}}
-        <main class="main flex-grow" id="main-content"> {{-- L'ID 'main' était dans votre HTML pour script.js --}}
+        <main class="main-content flex-grow">
+            {{-- Le padding-top pour le header fixe est géré par les sections .hero, .page-hero
+                 ou un wrapper spécifique si une page commence sans ces sections.
+                 Si une page standard a besoin d'un offset pour le header :
+                 <div style="padding-top: var(--header-height);">@yield('content')</div>
+                 Ou mieux, une classe CSS pour ce wrapper.
+                 Pour l'instant, on se fie aux sections pour gérer leur propre padding.
+            --}}
             @yield('content')
         </main>
 
-        {{-- Inclusion du Footer --}}
         @include('layouts.partials.public-footer')
+    </div>
 
-        {{-- Bouton Scroll Up (de votre HTML) --}}
-        <a href="#" class="scrollup" id="scroll-up">
-            <ion-icon name="arrow-up-outline" class="scrollup__icon"></ion-icon>
-        </a>
+    {{-- Bouton Scroll-up (Markup de votre style.css) --}}
+    <a href="#" class="scrollup" id="scroll-up">
+        <ion-icon name="arrow-up-outline" class="scrollup__icon"></ion-icon>
+        <span class="sr-only">Remonter en haut</span>
+    </a>
 
-    </div>{{-- Fin de #app-public --}}
-
-    {{-- AOS JS est initialisé dans notre public-main.js, donc le script CDN et l'init ici ne sont plus nécessaires --}}
-    {{-- <script src="https://unpkg.com/aos@next/dist/aos.js"></script> --}}
-    {{-- <script> AOS.init(...); </script> --}}
-
-    {{-- Permet aux vues enfants d'ajouter des scripts JS spécifiques à la fin du body --}}
+    {{-- Les scripts globaux comme AOS init sont dans public-main.js --}}
     @stack('scripts')
 </body>
 </html>
