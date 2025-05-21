@@ -5,70 +5,100 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- Titre et Description --}}
     <title>@yield('title', $siteSettings['site_name_short'] ?? $siteSettings['site_name'] ?? config('app.name', 'CRPQA'))</title>
     <meta name="description" content="@yield('meta_description', $siteSettings['site_tagline'] ?? 'Centre de Recherche en Physique Quantique et ses Applications.')">
 
-    {{-- Meta tags Open Graph & Twitter (essentiels pour un look pro sur les réseaux) --}}
+    {{-- Meta Tags pour le SEO et le Partage Social (Open Graph & Twitter Cards) --}}
     <meta property="og:title" content="@yield('og_title', $siteSettings['site_name_short'] ?? $siteSettings['site_name'] ?? config('app.name', 'CRPQA'))">
     <meta property="og:description" content="@yield('og_description', $siteSettings['site_tagline'] ?? 'Centre de Recherche en Physique Quantique et ses Applications.')">
     <meta property="og:type" content="@yield('og_type', 'website')">
     <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:image" content="@yield('og_image', !empty($siteSettings['og_image_url']) ? Storage::url($siteSettings['og_image_url']) : asset('assets/crpqa_og_default.jpg'))">
-    {{-- Assurez-vous que 'og_image_url' est stocké correctement (ex: chemin relatif depuis public/storage) et que crpqa_og_default.jpg existe --}}
+    {{-- Assurez-vous que $siteSettings['og_image_url'] contient un chemin accessible publiquement ou utilisez Storage::url() si stocké dans storage/app/public --}}
+    <meta property="og:image" content="@yield('og_image', !empty($siteSettings['og_image_url']) ? asset($siteSettings['og_image_url']) : asset('assets/images/crpqa_og_default.jpg'))">
+    <meta property="og:site_name" content="{{ $siteSettings['site_name'] ?? config('app.name', 'CRPQA') }}">
+    {{-- <meta property="fb:app_id" content="YOUR_FACEBOOK_APP_ID" /> --}} {{-- Si vous avez un App ID Facebook --}}
 
     <meta name="twitter:card" content="summary_large_image">
-    {{-- <meta name="twitter:site" content="@VotreCompteTwitter"> --}}
+    {{-- <meta name="twitter:site" content="@VotreCompteTwitter"> --}} {{-- Si vous avez un compte Twitter pour le site --}}
     <meta name="twitter:title" content="@yield('og_title', $siteSettings['site_name_short'] ?? $siteSettings['site_name'] ?? config('app.name', 'CRPQA'))">
     <meta name="twitter:description" content="@yield('og_description', $siteSettings['site_tagline'] ?? 'Centre de Recherche en Physique Quantique et ses Applications.')">
-    <meta name="twitter:image" content="@yield('og_image', !empty($siteSettings['og_image_url']) ? Storage::url($siteSettings['og_image_url']) : asset('assets/crpqa_og_default.jpg'))">
+    <meta name="twitter:image" content="@yield('og_image', !empty($siteSettings['og_image_url']) ? asset($siteSettings['og_image_url']) : asset('assets/images/crpqa_og_default.jpg'))">
 
-    {{-- Favicons (simplifié, mais vous pouvez étendre avec realfavicongenerator.net) --}}
-    <link rel="icon" href="{{ !empty($siteSettings['favicon_url']) ? Storage::url($siteSettings['favicon_url']) : asset('assets/favicon.png') }}" type="image/png">
-    <link rel="apple-touch-icon" href="{{ !empty($siteSettings['apple_touch_icon_url']) ? Storage::url($siteSettings['apple_touch_icon_url']) : asset('assets/apple-touch-icon.png') }}">
+    {{-- Favicons --}}
+    {{-- Utilisez un générateur de favicons pour obtenir toutes les tailles nécessaires et le manifest --}}
+    <link rel="icon" href="{{ !empty($siteSettings['favicon_url']) ? asset($siteSettings['favicon_url']) : asset('assets/icons/favicon.png') }}" type="image/png">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/icons/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/icons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/icons/favicon-16x16.png') }}">
+    {{-- <link rel="manifest" href="{{ asset('assets/icons/site.webmanifest') }}"> --}}
+    {{-- <meta name="msapplication-TileColor" content="#0A2A4D"> --}} {{-- Couleur pour tuile Windows (var(--first-color)) --}}
+    <meta name="theme-color" content="#ffffff"> {{-- Couleur du thème pour la barre d'adresse mobile --}}
 
-    {{-- Polices Google (déjà dans votre style.css, mais le preconnect est utile ici) --}}
+    {{-- Polices Google (Preconnect) --}}
+    {{-- Le <link href="..." pour charger les polices est dans votre style.css, ce qui est bien. --}}
+    {{-- Si ce n'est pas le cas, vous devez le remettre ici ou l'importer dans style.css --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    {{-- Le lien <link href="https://fonts.googleapis.com/css2?..." est déjà dans votre style.css fourni (au début)
-        ou vous pouvez le laisser ici si style.css ne l'importe pas directement. Pour éviter la duplication,
-        il est mieux de le charger une seule fois. Si votre style.css le fait, supprimez le lien <link href=...> d'ici.
-        Je suppose que votre style.css actuel ne l'importe PAS et que vous le gardez ici.
-    --}}
+    {{-- Assurez-vous que le lien suivant est bien présent DANS votre style.css ou ici, mais pas aux deux endroits.
+         Si dans style.css, ces <link> sont suffisants.
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
-
-    {{-- CSS & JS via Vite --}}
-    {{-- app.css importera votre style.css principal ET le CSS d'AOS --}}
+    --}}
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    {{-- Styles principaux et JS via Vite --}}
+    {{-- app.css devrait importer votre style.css ET le CSS d'AOS (si installé via npm) --}}
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/public-main.js'])
 
+    {{-- Styles spécifiques à une page --}}
     @stack('styles')
+
+    {{-- La variable --header-height est définie dans :root de style.css --}}
+    {{-- Le script JS pour la définir ici a été supprimé car redondant et moins flexible --}}
 </head>
-<body class="antialiased"> {{-- Les styles de body (police, couleur, fond) viennent de votre style.css --}}
-    {{-- La variable --header-height doit être définie dans :root de votre style.css --}}
+<body class="antialiased">
+    {{--
+        La classe `antialiased` est une classe utilitaire Tailwind pour le lissage des polices.
+        Les styles de base du body (font-family, background-color, color, line-height)
+        sont définis dans votre `style.css` (`body { ... }`).
+        Les styles pour la sélection de texte (::selection) sont également dans `style.css`.
+    --}}
 
     <div id="crpqa-app" class="flex flex-col min-h-screen">
+        {{-- Header --}}
+        {{-- Le header est "sticky" grâce à la classe .header et position:fixed dans style.css --}}
         @include('layouts.partials.public-header')
 
+        {{-- Contenu Principal --}}
+        {{-- La classe `main-content` est ajoutée pour des styles potentiels spécifiques au conteneur principal du contenu.
+             Le padding-top pour compenser le header fixe est géré par les sections elles-mêmes
+             (ex: .hero, .page-hero dans votre style.css ont `padding-top: calc(var(--header-height) + Xrem);`)
+             ou par un wrapper autour de @yield('content') si une page n'a pas de telle section en haut.
+        --}}
         <main class="main-content flex-grow">
-            {{-- Le padding-top pour le header fixe est géré par les sections .hero, .page-hero
-                 ou un wrapper spécifique si une page commence sans ces sections.
-                 Si une page standard a besoin d'un offset pour le header :
-                 <div style="padding-top: var(--header-height);">@yield('content')</div>
-                 Ou mieux, une classe CSS pour ce wrapper.
-                 Pour l'instant, on se fie aux sections pour gérer leur propre padding.
-            --}}
             @yield('content')
         </main>
 
+        {{-- Footer --}}
         @include('layouts.partials.public-footer')
     </div>
 
-    {{-- Bouton Scroll-up (Markup de votre style.css) --}}
-    <a href="#" class="scrollup" id="scroll-up">
+    {{-- Bouton Scroll-up (markup selon votre style.css) --}}
+    <a href="#" class="scrollup" id="scroll-up" title="Remonter en haut">
         <ion-icon name="arrow-up-outline" class="scrollup__icon"></ion-icon>
         <span class="sr-only">Remonter en haut</span>
     </a>
 
-    {{-- Les scripts globaux comme AOS init sont dans public-main.js --}}
+    {{-- Scripts globaux (AOS est initialisé dans public-main.js) --}}
+    {{-- Si vous avez installé Ionicons via npm/yarn, il sera bundlé. Sinon, vous avez besoin d'un script CDN pour Ionicons.
+         Exemple avec CDN (si non inclus via npm) :
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    Il est préférable de l'installer via npm: npm install ionicons
+    et l'importer dans votre app.js ou public-main.js si nécessaire, ou simplement utiliser les web components.
+    Votre `style.css` utilise `ion-icon` directement, ce qui suppose que les composants sont globalement disponibles.
+    --}}
+
     @stack('scripts')
 </body>
 </html>

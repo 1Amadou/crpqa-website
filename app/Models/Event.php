@@ -6,10 +6,12 @@ use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo; // AJOUTÉ
 use Illuminate\Database\Eloquent\Relations\HasMany; 
+use App\Traits\HasLocalizedFields;
 
 class Event extends Model
 {
     use HasFactory;
+    use HasLocalizedFields;
 
     protected $fillable = [
         'title',
@@ -68,4 +70,17 @@ class Event extends Model
         return $this->hasMany(EventRegistration::class, 'event_id');
     }
     // ----------------------------------------------------
+
+    /**
+     * Les partenaires associés à cet événement.
+     */
+    public function associatedPartners(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Partner::class,
+            'event_partner',    // nom de la table pivot
+            'event_id',         // clé étrangère vers events dans la pivot
+            'partner_id'        // clé étrangère vers partners dans la pivot
+        );
+    }
 }

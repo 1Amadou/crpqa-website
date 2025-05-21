@@ -1,70 +1,120 @@
 {{-- resources/views/layouts/partials/public-header.blade.php --}}
-<header class="header" id="header"> {{-- Classe .header de style.css --}}
+<header class="header" id="header" x-data="{ mobileMenuOpen: false }">
     <nav class="nav container">
-        <a href="{{ route('public.home') }}" class="nav__logo">
+        <a href="{{ route('public.home') }}" class="nav__logo" title="Accueil {{ $siteSettings['site_name_short'] ?? $siteSettings['site_name'] ?? 'CRPQA' }}">
+            {{-- Si vous avez un logo image, vous pouvez l'ajouter ici à la place ou en plus du texte --}}
+            {{-- <img src="{{ asset('assets/logo_crpqa.svg') }}" alt="Logo CRPQA" class="nav__logo-img"> --}}
             {{-- <span class="nav__logo-text">{{ $siteSettings['site_name_short'] ?? $siteSettings['site_name'] ?? 'CRPQA' }}</span> --}}
         </a>
 
-        {{-- Le x-data pour Alpine est déplacé ici pour englober le menu et le toggle si Alpine gère le 'show-menu' --}}
-        {{-- Si votre JS natif dans public-main.js gère 'show-menu', x-data n'est pas nécessaire ici pour cela --}}
-        <div class="nav__menu" id="nav-menu">
+        <div class="nav__menu" id="nav-menu" :class="{ 'show-menu': mobileMenuOpen }">
             <ul class="nav__list">
                 <li class="nav__item">
-                    <a href="{{ route('public.home') }}" class="nav__link {{ request()->routeIs('public.home') ? 'active-link' : '' }}">Accueil</a>
+                    <a href="{{ route('public.home') }}" class="nav__link {{ request()->routeIs('public.home') ? 'active-link' : '' }}">
+                        Accueil
+                    </a>
                 </li>
                 <li class="nav__item">
-                    <a href="{{ route('public.page', ['staticPage' => 'a-propos']) }}" class="nav__link {{ (request()->routeIs('public.page') && request()->route('staticPage') && request()->route('staticPage')->slug == 'a-propos') ? 'active-link' : '' }}">À Propos</a>
+                    {{-- Assurez-vous que 'a-propos' est le slug correct de votre page statique --}}
+                    <a href="{{ route('public.page', ['staticPage' => $siteSettings['about_page_slug'] ?? 'a-propos']) }}"
+                       class="nav__link {{ (request()->is(($siteSettings['about_page_slug'] ?? 'a-propos').'*')) ? 'active-link' : '' }}">
+                        À Propos
+                    </a>
                 </li>
 
-                {{-- Menu déroulant Vie du Centre - Utilisation d'Alpine pour le dropdown desktop --}}
-                {{-- Pour mobile, le CSS devra peut-être transformer cela en "accordéon" ou liens directs --}}
+                {{-- Menu déroulant Vie du Centre --}}
                 <li class="nav__item nav__item--dropdown" x-data="{ open: false }" @mouseleave="open = false">
-                    <button @mouseover="open = true" @click.prevent="open = !open" type="button" class="nav__link nav__link--button {{ (request()->routeIs('public.news.index') || request()->routeIs('public.news.show') || request()->routeIs('public.events.index') || request()->routeIs('public.events.show') ) ? 'active-link' : '' }}">
+                    <button type="button" @mouseover="open = true" @click.prevent="open = !open" aria-expanded="open" aria-controls="dropdown-vie-centre"
+                            class="nav__link nav__link--button {{ (request()->routeIs('public.news.*') || request()->routeIs('public.events.*') ) ? 'active-link' : '' }}">
                         Vie du Centre <ion-icon name="chevron-down-outline" class="nav__link-arrow" :class="{'rotate-180': open}"></ion-icon>
                     </button>
-                    <ul x-show="open" x-cloak x-transition class="nav__dropdown">
-                        <li><a href="{{ route('public.news.index') }}" class="nav__dropdown-link {{ request()->routeIs('public.news.index') || request()->routeIs('public.news.show') ? 'active-dropdown-link' : '' }}">Actualités</a></li>
-                        <li><a href="{{ route('public.events.index') }}" class="nav__dropdown-link {{ request()->routeIs('public.events.index') || request()->routeIs('public.events.show') ? 'active-dropdown-link' : '' }}">Événements</a></li>
+                    <ul x-show="open" id="dropdown-vie-centre" x-cloak
+                        @click.away="open = false"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 translate-y-2"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 translate-y-2"
+                        class="nav__dropdown">
+                        <li>
+                            <a href="{{ route('public.news.index') }}" class="nav__dropdown-link {{ request()->routeIs('public.news.*') ? 'active-dropdown-link' : '' }}">
+                                Actualités
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('public.events.index') }}" class="nav__dropdown-link {{ request()->routeIs('public.events.*') ? 'active-dropdown-link' : '' }}">
+                                Événements
+                            </a>
+                        </li>
                     </ul>
                 </li>
 
                 <li class="nav__item">
-                    <a href="{{ route('public.publications.index') }}" class="nav__link {{ (request()->routeIs('public.publications.index') || request()->routeIs('public.publications.show')) ? 'active-link' : '' }}">Publications</a>
+                    <a href="{{ route('public.publications.index') }}" class="nav__link {{ request()->routeIs('public.publications.*') ? 'active-link' : '' }}">
+                        Publications
+                    </a>
                 </li>
 
+                {{-- Menu déroulant Recherche & Équipe --}}
                 <li class="nav__item nav__item--dropdown" x-data="{ open: false }" @mouseleave="open = false">
-                    <button @mouseover="open = true" @click.prevent="open = !open" type="button" class="nav__link nav__link--button {{ (request()->routeIs('public.research_axes.index') || request()->routeIs('public.research_axes.show') || request()->routeIs('public.researchers.index') || request()->routeIs('public.researchers.show')) ? 'active-link' : '' }}">
+                    <button type="button" @mouseover="open = true" @click.prevent="open = !open" aria-expanded="open" aria-controls="dropdown-recherche"
+                            class="nav__link nav__link--button {{ (request()->routeIs('public.research_axes.*') || request()->routeIs('public.researchers.*')) ? 'active-link' : '' }}">
                         Recherche & Équipe <ion-icon name="chevron-down-outline" class="nav__link-arrow" :class="{'rotate-180': open}"></ion-icon>
                     </button>
-                    <ul x-show="open" x-cloak x-transition class="nav__dropdown">
-                        <li><a href="{{ route('public.research_axes.index') }}" class="nav__dropdown-link {{ request()->routeIs('public.research_axes.index') || request()->routeIs('public.research_axes.show') ? 'active-dropdown-link' : '' }}">Domaines de Recherche</a></li>
-                        <li><a href="{{ route('public.researchers.index') }}" class="nav__dropdown-link {{ request()->routeIs('public.researchers.index') || request()->routeIs('public.researchers.show') ? 'active-dropdown-link' : '' }}">Notre Équipe</a></li>
+                    <ul x-show="open" id="dropdown-recherche" x-cloak
+                        @click.away="open = false"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 translate-y-2"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 translate-y-2"
+                        class="nav__dropdown">
+                        <li>
+                            <a href="{{ route('public.research_axes.index') }}" class="nav__dropdown-link {{ request()->routeIs('public.research_axes.*') ? 'active-dropdown-link' : '' }}">
+                                Domaines de Recherche
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('public.researchers.index') }}" class="nav__dropdown-link {{ request()->routeIs('public.researchers.*') ? 'active-dropdown-link' : '' }}">
+                                Notre Équipe
+                            </a>
+                        </li>
                     </ul>
                 </li>
 
                 <li class="nav__item">
-                    <a href="{{ route('public.partners.index') }}" class="nav__link {{ request()->routeIs('public.partners.index') ? 'active-link' : '' }}">Partenaires</a>
+                    <a href="{{ route('public.partners.index') }}" class="nav__link {{ request()->routeIs('public.partners.index') ? 'active-link' : '' }}">
+                        Partenaires
+                    </a>
                 </li>
-                {{-- Le bouton Contact est maintenant dans .nav__buttons pour desktop, et peut être répété ici pour mobile si besoin --}}
-                 <li class="nav__item sm:hidden"> {{-- Uniquement pour le menu mobile si .nav__contact-button est caché sur sm --}}
-                    <a href="{{ route('public.contact.form') }}" class="nav__link button button--small button--outline">
-                        Contactez-nous
+
+                {{-- Lien Contact pour le menu mobile (si le bouton principal est caché) --}}
+                <li class="nav__item nav__item--mobile-only"> {{-- Classe à ajouter pour afficher seulement en mode menu mobile --}}
+                    <a href="{{ route('public.contact.form') }}" class="nav__link button button--outline button--small" style="width: max-content; margin-top: var(--sp-1); margin-left: var(--sp-1-5);">
+                         Contactez-nous
                     </a>
                 </li>
             </ul>
-            <div class="nav__close" id="nav-close">
+
+            {{-- Bouton de fermeture pour le menu mobile --}}
+            <div class="nav__close" id="nav-close" @click="mobileMenuOpen = false" title="Fermer le menu">
                 <ion-icon name="close-outline"></ion-icon>
             </div>
         </div>
 
+        {{-- Boutons d'action du header (ex: Contact) et Toggle pour mobile --}}
         <div class="nav__buttons">
-            {{-- Bouton Contact principal pour Desktop, votre CSS le cache sur mobile --}}
+            {{-- Le bouton Contact principal est stylé par .nav__contact-button dans votre style.css,
+                 qui le cache sur les écrans plus petits (<= 992px) --}}
             <a href="{{ route('public.contact.form') }}" class="button button--small nav__contact-button">
                 Contactez-nous
             </a>
-            <div class="nav__toggle" id="nav-toggle">
+            {{-- Toggle pour menu mobile --}}
+            <button type="button" class="nav__toggle" id="nav-toggle" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Ouvrir le menu" aria-expanded="mobileMenuOpen" aria-controls="nav-menu">
                 <ion-icon name="menu-outline"></ion-icon>
-            </div>
+            </button>
         </div>
     </nav>
 </header>

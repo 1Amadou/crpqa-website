@@ -3,10 +3,10 @@
 @section('header')
     <div class="flex flex-wrap justify-between items-center gap-2">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Détails de l\'Actualité') }}
+            {{ __('Détails de l\'Actualité') }} : {{ $news->getTranslation('title', app()->getLocale()) }}
         </h2>
         <div>
-            <a href="{{ route('admin.news.edit', $newsItem) }}" class="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 text-sm font-medium mr-2 shadow-sm transition ease-in-out duration-150">
+            <a href="{{ route('admin.news.edit', ['news' => $news->id]) }}" class="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 text-sm font-medium mr-2 shadow-sm transition ease-in-out duration-150">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block -mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                 </svg>

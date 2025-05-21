@@ -4,80 +4,112 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\StaticPage;
-use App\Models\News;
+use App\Models\News; // <== Assure-toi que ce modèle est bien importé
 use App\Models\Event;
 use App\Models\Publication;
 use App\Models\Partner;
 use App\Models\Researcher;
-use Carbon\Carbon;
+use App\Models\ResearchAxis;
+use Illuminate\Support\Facades\Log;
 
 class PublicPageController extends Controller
 {
+    /**
+     * Affiche la page d'accueil.
+     */
     public function home()
     {
-        // Nouvelles publiées et disponibles
         $latestNews = News::whereNotNull('published_at')
-                          ->where('published_at', '<=', now())
-                          ->orderBy('published_at', 'desc')
-                          ->take(2)
-                          ->get();
+                            ->where('published_at', '<=', now())
+                            ->orderBy('published_at', 'desc')
+                            ->take(3)
+                            ->get();
 
-        // Événements à venir avec date valide
         $upcomingEvents = Event::whereNotNull('start_datetime')
                                ->where('start_datetime', '>=', now())
                                ->orderBy('start_datetime', 'asc')
-                               ->take(2)
+                               ->take(3)
                                ->get();
 
-        // Publications vedettes ou fallback
         $featuredPublications = Publication::where('is_featured', true)
-                                           ->orderBy('publication_date', 'desc')
-                                           ->take(3)
-                                           ->get();
+                                            ->orderBy('publication_date', 'desc')
+                                            ->take(3)
+                                            ->get();
 
         if ($featuredPublications->isEmpty() && Publication::count() > 0) {
             $featuredPublications = Publication::orderBy('publication_date', 'desc')
-                                               ->take(3)
-                                               ->get();
+                                                    ->take(3)
+                                                    ->get();
         }
 
-        // Partenaires actifs
-        $activePartners = Partner::where('is_active', true)
-                                 ->orderBy('display_order', 'asc')
-                                 ->take(5)
-                                 ->get();
-
-        // Chercheurs en vedette (temporairement aléatoire)
-        $featuredResearchers = Researcher::where('is_active', true)
-                                         ->inRandomOrder()
-                                         ->take(3)
-                                         ->get();
-
-        // Message d'accueil (si non administrable via siteSettings)
-        $welcomeMessage = "Bienvenue au Centre de Recherche pour la Promotion de la Qualité en Afrique."; // À adapter
+        $keyResearchAxes = ResearchAxis::orderBy('display_order', 'asc')
+                                        ->take(4)
+                                        ->get();
 
         return view('public.home', compact(
             'latestNews',
             'upcomingEvents',
             'featuredPublications',
-            'activePartners',
-            'featuredResearchers',
-            'welcomeMessage'
+            'keyResearchAxes'
         ));
     }
 
-    public function showStaticPage($slug)
+    /**
+     * Affiche la page "À Propos" dédiée.
+     */
+    public function about()
     {
-        $page = StaticPage::where('slug', $slug)
-                          ->where('is_published', true)
-                          ->firstOrFail();
+        $aboutPage = StaticPage::where('slug', 'a-propos')
+                               ->firstOrFail();
 
-        // Page spécifique "À propos"
-        if ($page->slug === 'a-propos-crpqa') {
-            return view('public.about', compact('page'));
+        return view('public.about', ['page' => $aboutPage]);
+    }
+
+    /**
+     * Affiche une page statique via route-model binding.
+     *
+     * @param  StaticPage  $staticPage
+     */
+    public function showStaticPage(StaticPage $staticPage)
+    {
+        return view('public.static-page', ['page' => $staticPage]);
+    }
+
+    /**
+     * Affiche les autres pages statiques génériques basées sur slug.
+     *
+     * @param  string  $slug
+     */
+    public function showOtherStaticPage($slug)
+    {
+        try {
+            $staticPage = StaticPage::where('slug', $slug)->firstOrFail();
+            return view('public.static-page', ['page' => $staticPage]);
+        } catch (\Exception $e) {
+            Log::error("Erreur StaticPage slug={$slug}: {$e->getMessage()}");
+            abort(404);
         }
+    }
 
-        // Autres pages statiques
-        return view('public.static-page', compact('page'));
+    // === AJOUTE LA MÉTHODE SUIVANTE ICI ===
+    /**
+     * Affiche un article d'actualité spécifique.
+     *
+     * @param  string  $slug
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function showNewsDetail(string $slug)
+    {
+        $newsItem = News::where('slug', $slug)
+                        ->where('is_published', true) // Assure-toi qu'il est publié
+                        ->whereNotNull('published_at')
+                        ->where('published_at', '<=', now())
+                        ->with('category', 'user') // Charge les relations pour afficher les infos liées
+                        ->firstOrFail(); // Va lancer une 404 si non trouvé
+
+        // Optionnel : Si tu as un champ 'views_count' ou similaire, tu peux l'incrémenter
+        // $newsItem->increment('views_count');
+
+        return view('public.news_detail', compact('newsItem'));
     }
 }

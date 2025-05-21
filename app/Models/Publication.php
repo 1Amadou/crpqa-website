@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\HasLocalizedFields;
 
 class Publication extends Model
 {
     use HasFactory;
+    use HasLocalizedFields;
 
     protected $fillable = [
         'title',
@@ -62,4 +64,14 @@ class Publication extends Model
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
     }
+    // Dans App/Models/Publication.php (exemple d'accesseur)
+public function getAuthorsListShortAttribute()
+{
+    // Récupère les auteurs via la relation researchers()
+    $authors = $this->researchers->pluck('name')->toArray(); // Ou un champ 'full_name'
+    if (count($authors) > 2) {
+        return implode(', ', array_slice($authors, 0, 2)) . ' et al.';
+    }
+    return implode(', ', $authors);
+}
 }

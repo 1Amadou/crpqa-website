@@ -71,6 +71,7 @@
     --radius-lg: 0.5rem;   /* 8px */
     --radius-xl: 0.75rem;  /* 12px */
     --radius-full: 9999px;
+    --header-height: 5rem;
 }
 
 /* 2. Styles de Base */
@@ -79,6 +80,15 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+::selection {
+    background-color: var(--accent-color-cyan); /* Ou var(--first-color) selon votre préférence */
+    color: white; /* Ou var(--body-color) */
+}
+::-moz-selection { /* Firefox */
+    background-color: var(--accent-color-cyan);
+    color: white;
 }
 
 html {
@@ -616,3 +626,892 @@ img, svg, video { /* MODERNISATION: Ajout de svg et video */
     100% { transform: rotate(360deg); }
 }
 
+/* Dans resources/css/style.css */
+
+/* ... (vos styles .header, .nav, .nav__link, etc. existants) ... */
+
+.nav__logo-text { /* Assurez-vous que cette classe est bien stylée */
+    font-family: var(--title-font);
+    font-size: 1.8rem; /* Ou la taille de votre choix */
+    font-weight: var(--font-extra-bold);
+    color: var(--first-color);
+    letter-spacing: -1px; /* Effet de votre style.css */
+    transition: var(--transition-fast);
+}
+.nav__logo:hover .nav__logo-text {
+    color: var(--accent-color-cyan); /* Effet de votre style.css */
+}
+
+/* Styles pour les éléments de dropdown */
+.nav__item--dropdown {
+    position: relative; /* Contexte de positionnement pour le dropdown */
+}
+
+.nav__link--button {
+    background: none;
+    border: none;
+    padding: 0; /* Ou hériter du padding de .nav__link si appliqué directement */
+    margin:0; /* Réinitialiser si c'est un bouton */
+    display: inline-flex; /* Pour aligner texte et flèche */
+    align-items: center;
+    cursor: pointer;
+    /* Hérite des styles de .nav__link pour la police, couleur, etc. */
+}
+
+.nav__link-arrow {
+    font-size: 0.8em; /* Ajuster la taille */
+    margin-left: var(--sp-0-25);
+    transition: transform 0.2s ease-in-out;
+    /* La rotation est gérée par Alpine :class */
+}
+
+.nav__dropdown {
+    position: absolute;
+    top: calc(100% + var(--sp-0-5)); /* Un peu d'espace sous le lien parent */
+    left: 0;
+    background-color: var(--body-color);
+    border-radius: var(--radius-md, 0.375rem);
+    box-shadow: var(--shadow-medium);
+    z-index: var(--z-dropdown);
+    min-width: 240px; /* Largeur pour les dropdowns */
+    padding: var(--sp-0-5) 0;
+    list-style: none;
+    /* Les transitions opacity/transform sont gérées par x-transition d'Alpine */
+}
+
+.nav__dropdown-link {
+    display: block;
+    padding: var(--sp-0-75) var(--sp-1-5);
+    font-size: var(--small-font-size); /* Un peu plus petit que les liens principaux */
+    color: var(--title-color);
+    font-family: var(--body-font); /* Ou --title-font */
+    font-weight: var(--font-regular); /* Moins gras que les liens principaux */
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    white-space: nowrap;
+}
+.nav__dropdown-link:hover {
+    background-color: var(--container-color); /* Un fond léger au survol */
+    color: var(--accent-color-cyan);
+}
+.nav__dropdown-link.active-dropdown-link {
+    background-color: rgba(0, 191, 255, 0.08); /* Ou var(--accent-color-cyan) avec opacité faible */
+    color: var(--accent-color-cyan-alt); /* Ou var(--accent-color-cyan) */
+    font-weight: var(--font-semi-bold);
+}
+
+/* Styles pour le menu mobile (dans la media query @media screen and (max-width: 992px)) */
+@media screen and (max-width: 992px) {
+    /* ... (vos styles existants pour .nav__menu, .nav__list, .nav__link en mobile) ... */
+
+    .nav__item--dropdown .nav__link--button {
+        width: 100%; /* Prend toute la largeur du li */
+        justify-content: space-between; /* Pousse la flèche à droite */
+        padding: var(--sp-1) var(--sp-1-5); /* Même padding que .nav__link mobile */
+    }
+
+    .nav__menu .nav__item--dropdown .nav__dropdown {
+        position: static;
+        width: auto;
+        box-shadow: none;
+        border-radius: 0;
+        border-top: 1px solid var(--border-color);
+        margin-left: var(--sp-1-5); /* Indentation des sous-menus */
+        padding: var(--sp-0-5) 0;
+        min-width: unset;
+        /* Les transitions Alpine.js peuvent toujours s'appliquer si x-show est utilisé pour afficher/cacher */
+    }
+    .nav__menu .nav__item--dropdown .nav__dropdown-link {
+        padding: var(--sp-0-75) var(--sp-1);
+        font-size: calc(var(--h3-font-size) - 0.2rem); /* Un peu plus petit que le lien parent mobile */
+    }
+
+    .nav__item--mobile-only {
+        display: list-item !important; /* Ou block, pour l'afficher */
+        margin-top: var(--sp-1);
+        padding: 0 var(--sp-1-5); /* Pour aligner avec les autres liens si besoin */
+    }
+    .nav__item--mobile-only .button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+/* Cache par défaut le lien contact mobile spécifique */
+.nav__item--mobile-only {
+    display: none;
+}
+
+/* Dans resources/css/style.css */
+
+/* ... (vos styles .footer, .footer__container, .footer__title, .footer__links etc. existants) ... */
+
+.footer__content {
+    /* Si chaque bloc a besoin d'un padding ou d'une marge spécifique
+       en plus du 'gap' de la grille parente. */
+    /* Exemple: margin-bottom: var(--sp-1-5); pour espacer verticalement sur mobile quand les colonnes s'empilent */
+}
+
+.footer__brand .footer__logo-text { /* Style spécifique pour le logo dans le footer si différent du nav */
+    /* font-size: 1.6rem; */ /* Un peu plus petit peut-être */
+}
+.footer__brand .footer__description {
+    /* font-size: var(--small-font-size); */ /* Déjà dans votre style.css */
+    /* line-height: 1.7; */ /* Déjà dans votre style.css */
+    margin-bottom: var(--sp-1); /* Espace avant les icônes sociales */
+}
+
+.footer__social {
+    /* display: flex; gap: var(--sp-1); */ /* Déjà dans votre style.css */
+    margin-top: var(--sp-1-5); /* Espace après la description */
+}
+.footer__social-link ion-icon {
+    font-size: 1.6rem; /* Taille des icônes sociales */
+}
+
+.footer__contact-details li {
+    /* display: flex; align-items: flex-start; gap: var(--sp-0-75); */ /* Déjà dans votre style.css */
+    /* Les styles pour l'icône sont déjà là */
+}
+.footer__contact-details .footer__link { /* Pour que les liens email/tel héritent bien du style .footer__link */
+    color: var(--second-color); /* Ou la couleur par défaut des liens du footer */
+}
+.footer__contact-details .footer__link:hover {
+    color: var(--accent-color-cyan);
+}
+
+.footer__contact-action { /* Conteneur pour le bouton "Envoyer un message" */
+    margin-top: var(--sp-1-5);
+}
+.footer__button--contact.button--outline { /* Styles pour le bouton contact dans le footer */
+    border-color: var(--second-color); /* Ou une couleur d'accent plus visible */
+    color: var(--second-color);
+}
+.footer__button--contact.button--outline:hover {
+    background-color: var(--second-color);
+    color: var(--first-color-alt); /* Texte foncé sur fond clair */
+    border-color: var(--second-color);
+}
+
+
+.footer__bottom {
+    /* border-top: 1px solid var(--first-color-light); /* Déjà dans votre style.css sur .footer__container */
+    /* Si vous déplacez la bordure ici : */
+    /* padding-top: var(--sp-2); */
+    /* margin-top: var(--sp-3); */ /* Espace au-dessus de la ligne */
+    text-align: center;
+}
+
+.footer__copy {
+    /* font-size: var(--smaller-font-size); */ /* Déjà dans votre style.css */
+    /* color: var(--text-color-light); */ /* Déjà dans votre style.css */
+    /* padding: var(--sp-2) 0 var(--sp-0-5); */ /* Ajuster si besoin, car .footer__bottom a maintenant un padding-top */
+    padding-bottom: var(--sp-0-5);
+}
+
+.footer__legal-links { /* Renommé de .footer__sublinks-nav pour BEM */
+    margin-top: var(--sp-0-5);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--sp-0-5) var(--sp-1-5); /* Espace vertical et horizontal */
+}
+.footer__sublink { /* Vérifier la cohérence avec votre style.css */
+    font-size: var(--smaller-font-size);
+    color: var(--text-color-light); /* Ou var(--second-color) si le footer est très sombre */
+}
+.footer__sublink:hover {
+    color: var(--accent-color-cyan);
+    text-decoration: underline;
+}
+.footer__credits {
+    font-size: calc(var(--smaller-font-size) - 0.1rem); /* Très petit */
+    color: var(--text-color-light);
+    opacity: 0.7;
+    margin-top: var(--sp-1);
+}
+
+/* Dans resources/css/style.css */
+
+/* ... (vos styles existants) ... */
+
+/* Section Publications en Vedette sur l'Accueil (si .research__card n'est pas suffisant) */
+.publications-home {
+    background-color: var(--body-color); /* Ou var(--container-color) si alternance */
+}
+.publication__card_home { /* Si vous voulez des styles spécifiques pour ces cartes */
+    /* Peut-être un padding différent ou une bordure */
+    /* text-align: left; /* Si différent de .research__card */
+}
+.publication__title_home {
+    font-size: 1.1rem; /* Plus petit que .research__card-title */
+    color: var(--first-color);
+    margin-bottom: var(--sp-0-5);
+    line-height: 1.4;
+    /* Pour clampage de texte si besoin (déjà dans .news__title, peut être réutilisé) */
+     display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: calc(1.4em * 2); /* Espace pour 2 lignes */
+}
+.publication__authors_home {
+    font-size: var(--smaller-font-size);
+    color: var(--text-color-light);
+    margin-bottom: var(--sp-0-75);
+    line-height: 1.5;
+    /* Clampage de texte si beaucoup d'auteurs */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.publication__meta_home {
+    font-size: var(--smaller-font-size);
+    color: var(--text-color-light);
+    margin-bottom: var(--sp-1);
+}
+.publication__link_home {
+    /* Styles similaires à .research__card-link */
+    font-family: var(--title-font);
+    font-weight: var(--font-semi-bold);
+    color: var(--accent-color-cyan);
+    font-size: var(--small-font-size);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-0-25);
+    margin-top: auto; /* Pousse en bas de la carte */
+}
+.publication__link_home ion-icon {
+    transition: var(--transition-fast);
+}
+.publication__link_home:hover ion-icon {
+    transform: translateX(4px);
+}
+
+
+/* Styles pour Témoignages et Chiffres Clés (déjà dans le @push('styles') du Blade) */
+/* Il est mieux de les déplacer ici pour la centralisation */
+
+.testimonials-section { /* Ou .impact-chiffres si c'est un nom plus global */
+    /* background-color: var(--container-color); */ /* Fond alterné */
+    /* padding-top: var(--section-padding-y, 6rem); */ /* Hérite de .section */
+    /* padding-bottom: var(--section-padding-y, 4rem); */
+}
+.key-figures__container {
+    /* display: grid; */ /* La classe .grid est déjà appliquée */
+    /* gap: var(--sp-2); */ /* La classe .grid est déjà appliquée */
+    margin-bottom: var(--sp-3);
+}
+.key-figure__item {
+    text-align: center;
+    padding: var(--sp-1); /* Un peu d'espace autour */
+}
+.key-figure__number {
+    font-size: var(--h1-font-size); /* Ou une taille personnalisée pour les chiffres */
+    font-weight: var(--font-extra-bold);
+    color: var(--accent-color-cyan); /* Ou var(--first-color) */
+    line-height: 1.1;
+    margin-bottom: var(--sp-0-25);
+}
+.key-figure__label {
+    font-size: var(--normal-font-size);
+    font-family: var(--body-font); /* Ou --title-font si vous préférez */
+    color: var(--text-color-light);
+}
+
+.testimonials__container {
+    /* display: grid; */ /* La classe .grid est déjà appliquée */
+    /* gap: var(--sp-2); */ /* La classe .grid est déjà appliquée */
+}
+.testimonial__card {
+    background-color: var(--body-color);
+    padding: var(--sp-2);
+    border-radius: var(--radius-lg, 0.75rem); /* Utiliser vos variables d'arrondi */
+    box-shadow: var(--shadow-light);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Pour aligner le contenu si hauteurs variables */
+}
+.testimonial__quote {
+    font-size: var(--normal-font-size);
+    font-style: italic;
+    color: var(--text-color); /* Texte principal pour la citation */
+    line-height: 1.7;
+    margin-bottom: var(--sp-1-5);
+    position: relative;
+    padding: 0 var(--sp-1); /* Espace pour les guillemets */
+}
+.testimonial__quote::before,
+.testimonial__quote::after { /* Guillemets décoratifs */
+    font-family: var(--title-font); /* Ou une police avec de jolis guillemets */
+    font-size: 3rem; /* Taille des guillemets */
+    color: var(--accent-color-cyan);
+    opacity: 0.3;
+    position: absolute;
+    line-height: 1;
+}
+.testimonial__quote::before {
+    content: '“';
+    top: -0.2em; /* Ajustement vertical */
+    left: -0.1em; /* Ajustement horizontal */
+}
+.testimonial__quote::after { /* Optionnel, si vous voulez des guillemets fermants */
+    /* content: '”'; */
+    /* bottom: -0.2em; */
+    /* right: -0.1em; */
+}
+.testimonial__author {
+    font-weight: var(--font-bold);
+    color: var(--title-color);
+    margin-top: auto; /* Pousse l'auteur en bas si la citation est courte */
+}
+.testimonial__author-title {
+    font-size: var(--smaller-font-size);
+    color: var(--text-color-light);
+    margin-top: var(--sp-0-25);
+}
+
+.news-filters { background-color: var(--container-color); padding: var(--sp-2); border-radius: var(--radius-lg, 0.75rem); margin-bottom: var(--sp-3); box-shadow: var(--shadow-light); }
+    .news-filters form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-1-5); align-items: flex-end; }
+    .news-filters .form__group { margin-bottom: 0; }
+    .news-filters .form__label { font-weight: var(--font-semi-bold); margin-bottom: var(--sp-0-25); display: block; color: var(--title-color); }
+    .news-filters .button { width: 100%; }
+    @media screen and (min-width: 768px) { .news-filters .button { width: auto; } }
+
+    .pagination-nav { margin-top: var(--sp-3); display: flex; justify-content: center; }
+    /* Styles pour la pagination Tailwind par défaut (si non surchargés par votre style.css) */
+    .pagination-nav svg { width: 1em; height: 1em; }
+    .pagination-nav > nav[role="navigation"] > div:first-child { display: none; } /* Cache "Showing X to Y..." */
+    .pagination-nav .flex.justify-between.flex-1 { display: none; } /* Cache "Showing X to Y..." pour simple-tailwind */
+    .pagination-nav span[aria-current] span, .pagination-nav a[rel="prev"], .pagination-nav a[rel="next"], .pagination-nav .page-link {
+        padding: var(--sp-0-75) var(--sp-1); min-width: 40px; text-align:center;
+        border: 1px solid var(--border-color); color: var(--first-color);
+        margin: 0 var(--sp-0-25); border-radius: var(--radius-md); transition: var(--transition-fast);
+    }
+    .pagination-nav span[aria-current] span { background-color: var(--accent-color-cyan); color:white; border-color:var(--accent-color-cyan); font-weight:bold; }
+    .pagination-nav a[rel="prev"]:hover, .pagination-nav a[rel="next"]:hover, .pagination-nav .page-link:hover { background-color:var(--container-color); border-color:var(--accent-color-cyan-alt); }
+    .pagination-nav span[aria-disabled="true"] span { color: var(--text-color-light); opacity:0.6; pointer-events:none; }
+
+
+    .news-list-empty { text-align: center; padding: var(--sp-3); border: 1px dashed var(--border-color); border-radius: var(--radius-lg, 0.75rem); color: var(--text-color-light); background-color: var(--container-color); }
+    .news-list-empty ion-icon { font-size: 2.5rem; display: block; margin: 0 auto var(--sp-1); opacity: 0.5; }
+
+    .news-sidebar {}
+    .sidebar-widget { background-color: var(--body-color); padding: var(--sp-1-5); border-radius: var(--radius-md, 0.375rem); margin-bottom: var(--sp-2); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); }
+    .sidebar-widget__title { font-size: 1.25rem; font-family: var(--title-font); font-weight: var(--font-bold); color: var(--first-color); margin-bottom: var(--sp-1); padding-bottom: var(--sp-0-75); border-bottom: 2px solid var(--accent-color-cyan); display: inline-block; }
+    .sidebar-widget ul { list-style: none; padding-left: 0; }
+    .sidebar-widget ul li a.sidebar-widget__link { display: flex; justify-content: space-between; align-items:center; padding: var(--sp-0-75) 0; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color); transition: var(--transition-fast); }
+    .sidebar-widget ul li:last-child a.sidebar-widget__link { border-bottom: none; }
+    .sidebar-widget ul li a.sidebar-widget__link:hover, .sidebar-widget ul li a.sidebar-widget__link.active-category { color: var(--accent-color-cyan); padding-left: var(--sp-0-5); font-weight: var(--font-semi-bold); }
+    .sidebar-widget__link .count { background-color: var(--container-color); color: var(--text-color-light); font-size: var(--smaller-font-size); padding: 0.1em 0.5em; border-radius: var(--radius-sm); }
+
+     /* Styles pour la section des filtres */
+        .news-filters { 
+            background-color: var(--container-color); 
+            padding: var(--sp-2); 
+            border-radius: var(--radius-lg, 0.75rem); 
+            margin-bottom: var(--sp-3); 
+            box-shadow: var(--shadow-light); 
+        }
+        .news-filters form { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+            gap: var(--sp-1-5); 
+            align-items: flex-end; 
+        }
+        .news-filters .form__group { margin-bottom: 0; }
+        .news-filters .form__label { 
+            font-weight: var(--font-semi-bold); 
+            margin-bottom: var(--sp-0-25); 
+            display: block; 
+            color: var(--title-color); 
+        }
+        .news-filters .button { width: 100%; }
+        @media screen and (min-width: 768px) { .news-filters .button { width: auto; } }
+
+        /* Styles pour la pagination */
+        .pagination-nav { margin-top: var(--sp-3); display: flex; justify-content: center; }
+        /* Masquer le texte "Showing X to Y..." par défaut de Laravel/Tailwind */
+        .pagination-nav > nav[role="navigation"] > div:first-child { display: none; } 
+        .pagination-nav .flex.justify-between.flex-1 { display: none; } 
+
+        .pagination-nav span[aria-current] span, 
+        .pagination-nav a[rel="prev"], 
+        .pagination-nav a[rel="next"], 
+        .pagination-nav .page-link {
+            padding: var(--sp-0-75) var(--sp-1); 
+            min-width: 40px; 
+            text-align:center;
+            border: 1px solid var(--border-color); 
+            color: var(--first-color);
+            margin: 0 var(--sp-0-25); 
+            border-radius: var(--radius-md); 
+            transition: var(--transition-fast);
+        }
+        .pagination-nav span[aria-current] span { 
+            background-color: var(--accent-color-cyan); 
+            color:white; 
+            border-color:var(--accent-color-cyan); 
+            font-weight:bold; 
+        }
+        .pagination-nav a[rel="prev"]:hover, 
+        .pagination-nav a[rel="next"]:hover, 
+        .pagination-nav .page-link:hover { 
+            background-color:var(--container-color); 
+            border-color:var(--accent-color-cyan-alt); 
+        }
+        .pagination-nav span[aria-disabled="true"] span { 
+            color: var(--text-color-light); 
+            opacity:0.6; 
+            pointer-events:none; 
+        }
+
+        /* Styles pour l'état d'absence d'actualités */
+        .news-list-empty { 
+            text-align: center; 
+            padding: var(--sp-3); 
+            border: 1px dashed var(--border-color); 
+            border-radius: var(--radius-lg, 0.75rem); 
+            color: var(--text-color-light); 
+            background-color: var(--container-color); 
+        }
+        .news-list-empty ion-icon { 
+            font-size: 2.5rem; 
+            display: block; 
+            margin: 0 auto var(--sp-1); 
+            opacity: 0.5; 
+        }
+
+        /* Styles pour la sidebar */
+        .news-sidebar {}
+        .sidebar-widget { 
+            background-color: var(--body-color); 
+            padding: var(--sp-1-5); 
+            border-radius: var(--radius-md, 0.375rem); 
+            margin-bottom: var(--sp-2); 
+            box-shadow: var(--shadow-sm); 
+            border: 1px solid var(--border-color); 
+        }
+        .sidebar-widget__title { 
+            font-size: 1.25rem; 
+            font-family: var(--title-font); 
+            font-weight: var(--font-bold); 
+            color: var(--first-color); 
+            margin-bottom: var(--sp-1); 
+            padding-bottom: var(--sp-0-75); 
+            border-bottom: 2px solid var(--accent-color-cyan); 
+            display: inline-block; 
+        }
+        .sidebar-widget ul { list-style: none; padding-left: 0; }
+        .sidebar-widget ul li a.sidebar-widget__link { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items:center; 
+            padding: var(--sp-0-75) 0; 
+            color: var(--text-color); 
+            text-decoration: none; 
+            border-bottom: 1px solid var(--border-color); 
+            transition: var(--transition-fast); 
+        }
+        .sidebar-widget ul li:last-child a.sidebar-widget__link { border-bottom: none; }
+        .sidebar-widget ul li a.sidebar-widget__link:hover, 
+        .sidebar-widget ul li a.sidebar-widget__link.active-category { 
+            color: var(--accent-color-cyan); 
+            padding-left: var(--sp-0-5); 
+            font-weight: var(--font-semi-bold); 
+        }
+        .sidebar-widget__link .count { 
+            background-color: var(--container-color); 
+            color: var(--text-color-light); 
+            font-size: var(--smaller-font-size); 
+            padding: 0.1em 0.5em; 
+            border-radius: var(--radius-sm); 
+        }
+
+        /* Styles pour les cartes d'actualités (news__card) */
+        .news__container {
+            /* Assure-toi que ces styles sont cohérents avec tes utilitaires Tailwind ou ton CSS personnalisé */
+            /* Exemple: grid md:grid-cols-2 gap-sp-2 */
+        }
+        .news__card {
+            background-color: var(--container-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease-in-out;
+            border: 1px solid var(--border-color);
+        }
+        .news__card:hover {
+            transform: translateY(-5px);
+        }
+        .news__img-link {
+            display: block;
+            flex-shrink: 0; /* Empêche l'image de rétrécir */
+        }
+        .news__img {
+            width: 100%;
+            height: 200px; /* Hauteur fixe pour l'image de couverture */
+            object-fit: cover; /* Recadre l'image pour couvrir la zone */
+            display: block;
+        }
+        .news__data {
+            padding: var(--sp-1-5);
+            flex-grow: 1; /* Permet aux données de prendre l'espace restant */
+            display: flex;
+            flex-direction: column;
+        }
+        .news__meta {
+            font-size: var(--smaller-font-size);
+            color: var(--text-color-light);
+            margin-bottom: var(--sp-0-5);
+            display: flex;
+            align-items: center;
+        }
+        .news__category-separator {
+            margin: 0 var(--sp-0-5);
+            color: var(--border-color);
+        }
+        .news__category-link {
+            font-weight: var(--font-semi-bold);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+        .news__category-link:hover {
+            text-decoration: underline;
+        }
+        .news__title {
+            font-size: var(--h3-font-size);
+            font-family: var(--title-font);
+            font-weight: var(--font-bold);
+            margin-bottom: var(--sp-0-75);
+            line-height: 1.3;
+        }
+        .news__title a {
+            color: var(--title-color);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+        .news__title a:hover {
+            color: var(--accent-color-cyan);
+        }
+        .news__description {
+            font-size: var(--normal-font-size);
+            color: var(--text-color);
+            margin-bottom: var(--sp-1-5);
+            line-height: 1.5;
+            flex-grow: 1; /* Permet à la description de prendre l'espace */
+        }
+        .news__link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--first-color);
+            font-weight: var(--font-semi-bold);
+            text-decoration: none;
+            transition: color var(--transition-fast), transform var(--transition-fast);
+            margin-top: auto; /* Pousse le lien vers le bas de la carte */
+        }
+        .news__link:hover {
+            color: var(--accent-color-cyan);
+            transform: translateX(5px);
+        }
+        .news__link ion-icon {
+            margin-left: var(--sp-0-5);
+            font-size: var(--normal-font-size);
+        }
+
+.news-article__title { font-size: clamp(1.8rem, 4vw, var(--h1-font-size)); font-family: var(--title-font); font-weight: var(--font-extra-bold); color: var(--first-color); line-height: 1.25; margin-bottom: var(--sp-1); }
+    .news-article__meta { font-size: var(--small-font-size); color: var(--text-color-light); margin-bottom: var(--sp-2); display: flex; flex-wrap: wrap; gap: var(--sp-0-75) var(--sp-1-5); align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--sp-1-5); }
+    .news-article__meta-item { display: inline-flex; align-items: center; }
+    .news-article__meta ion-icon { margin-right: var(--sp-0-5); font-size: 1.3em; color: var(--first-color-light); }
+    .news-article__cover-image { width: 100%; border-radius: var(--radius-md, 0.5rem); margin-bottom: var(--sp-2-5); max-height: 500px; object-fit: cover; box-shadow: var(--shadow-sm); }
+
+    .news-article__content { line-height: 1.8; font-size: 1.05rem; color: var(--text-color); }
+    .wysiwyg-content h2, .wysiwyg-content h3, .wysiwyg-content h4 { font-family: var(--title-font); color: var(--first-color); margin-top: var(--sp-2-5); margin-bottom: var(--sp-1); font-weight: var(--font-bold); line-height:1.3; }
+    .wysiwyg-content h2 { font-size: var(--h2-font-size); }
+    .wysiwyg-content h3 { font-size: var(--h3-font-size); }
+    .wysiwyg-content p { margin-bottom: var(--sp-1-5); }
+    .wysiwyg-content ul, .wysiwyg-content ol { margin-bottom: var(--sp-1-5); padding-left: var(--sp-2); }
+    .wysiwyg-content ul li { list-style-type: disc; }
+    .wysiwyg-content ol li { list-style-type: decimal; }
+    .wysiwyg-content li { margin-bottom: var(--sp-0-75); }
+    .wysiwyg-content blockquote { border-left: 3px solid var(--accent-color-cyan); padding: var(--sp-1) var(--sp-1-5); margin: var(--sp-2) 0 var(--sp-2) var(--sp-1); font-style: italic; color: var(--text-color); background-color: var(--container-color); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+    .wysiwyg-content blockquote p:last-child { margin-bottom: 0; }
+    .wysiwyg-content img { max-width: 100%; height: auto; border-radius: var(--radius-md); margin: var(--sp-2) auto; display: block; box-shadow: var(--shadow-md); }
+    .wysiwyg-content a { color: var(--accent-color-cyan); text-decoration: underline; }
+    .wysiwyg-content a:hover { color: var(--accent-color-cyan-alt); }
+
+    .news-article__share { margin-top: var(--sp-3); padding-top: var(--sp-2); border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap; }
+    .news-article__share-label { font-weight: var(--font-bold); color: var(--title-color); margin-right: var(--sp-0-5); }
+    .news-article__share-buttons button, .news-article__share-buttons a { font-size: 1.8rem; color: var(--text-color-light); transition: var(--transition-fast); padding: var(--sp-0-25); background: none; border: none; cursor: pointer; line-height: 1; } /* line-height pour alignement vertical icônes */
+    .news-article__share-buttons button:hover, .news-article__share-buttons a:hover { color: var(--accent-color-cyan); transform: translateY(-2px) scale(1.1); }
+
+    .news-gallery { margin-top: var(--sp-3); margin-bottom: var(--sp-2); }
+    .news-gallery__title { font-size: var(--h3-font-size); font-family: var(--title-font); font-weight: var(--font-bold); color: var(--first-color); margin-bottom: var(--sp-1-5); }
+    .news-gallery__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-1); } /* minmax augmenté */
+    .news-gallery__item img { width: 100%; height: 120px; object-fit: cover; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); cursor: pointer; transition: var(--transition-fast); }
+    .news-gallery__item img:hover { opacity: 0.8; box-shadow: var(--shadow-md); }
+
+    .related-articles__section { margin-top: var(--sp-4); padding-top: var(--sp-3); border-top: 1px solid var(--border-color); }
+    .related-articles__title { font-size: var(--h2-font-size); font-family: var(--title-font); font-weight: var(--font-bold); color: var(--first-color); margin-bottom: var(--sp-2); text-align: center; }
+    .related-articles__section .news__card .news__description { display: none; } /* Cache la description pour les cartes liées */
+    .related-articles__section .news__card .news__link { margin-top: var(--sp-1); } /* Ajuste l'espace si description cachée */
+
+    /* Styles pour le fil d'Ariane (Breadcrumbs) - à déplacer dans style.css */
+    .breadcrumb { padding: var(--sp-0-75) 0; margin-bottom: var(--sp-1-5); border-bottom: 1px solid var(--border-color); }
+    .breadcrumb ol { display: flex; flex-wrap: wrap; list-style: none; margin: 0; padding: 0; }
+    .breadcrumb li { font-size: var(--small-font-size); color: var(--text-color-light); }
+    .breadcrumb li a { color: var(--first-color); text-decoration: none; transition: var(--transition-fast); }
+    .breadcrumb li a:hover { color: var(--accent-color-cyan); }
+    .breadcrumb li ion-icon { font-size: 0.9em; margin: 0 var(--sp-0-25); vertical-align: middle; color: var(--text-color-light); } /* Ajuster taille et alignement */
+    .breadcrumb li[aria-current="page"] { font-weight: var(--font-semi-bold); }
+
+    /* Styles spécifiques à l'article */
+        .news-article__title { 
+            font-size: clamp(1.8rem, 4vw, var(--h1-font-size)); 
+            font-family: var(--title-font); 
+            font-weight: var(--font-extra-bold); 
+            color: var(--first-color); 
+            line-height: 1.25; 
+            margin-bottom: var(--sp-1); 
+        }
+        .news-article__meta { 
+            font-size: var(--small-font-size); 
+            color: var(--text-color-light); 
+            margin-bottom: var(--sp-2); 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: var(--sp-0-75) var(--sp-1-5); 
+            align-items: center; 
+            border-bottom: 1px solid var(--border-color); 
+            padding-bottom: var(--sp-1-5); 
+        }
+        .news-article__meta-item { display: inline-flex; align-items: center; }
+        .news-article__meta ion-icon { 
+            margin-right: var(--sp-0-5); 
+            font-size: 1.3em; 
+            color: var(--first-color-light); 
+        }
+        .news-article__cover-image { 
+            width: 100%; 
+            border-radius: var(--radius-md, 0.5rem); 
+            margin-bottom: var(--sp-2-5); 
+            max-height: 500px; 
+            object-fit: cover; 
+            box-shadow: var(--shadow-sm); 
+        }
+
+        /* Styles WYSIWYG (pour le contenu de l'article) */
+        .news-article__content.wysiwyg-content { 
+            line-height: 1.8; 
+            font-size: 1.05rem; 
+            color: var(--text-color); 
+        }
+        .wysiwyg-content h2, .wysiwyg-content h3, .wysiwyg-content h4 { 
+            font-family: var(--title-font); 
+            color: var(--first-color); 
+            margin-top: var(--sp-2-5); 
+            margin-bottom: var(--sp-1); 
+            font-weight: var(--font-bold); 
+            line-height:1.3; 
+        }
+        .wysiwyg-content h2 { font-size: var(--h2-font-size); }
+        .wysiwyg-content h3 { font-size: var(--h3-font-size); }
+        .wysiwyg-content p { margin-bottom: var(--sp-1-5); }
+        .wysiwyg-content ul, .wysiwyg-content ol { margin-bottom: var(--sp-1-5); padding-left: var(--sp-2); }
+        .wysiwyg-content ul li { list-style-type: disc; }
+        .wysiwyg-content ol li { list-style-type: decimal; }
+        .wysiwyg-content li { margin-bottom: var(--sp-0-75); }
+        .wysiwyg-content blockquote { 
+            border-left: 3px solid var(--accent-color-cyan); 
+            padding: var(--sp-1) var(--sp-1-5); 
+            margin: var(--sp-2) 0 var(--sp-2) var(--sp-1); 
+            font-style: italic; 
+            color: var(--text-color); 
+            background-color: var(--container-color); 
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0; 
+        }
+        .wysiwyg-content blockquote p:last-child { margin-bottom: 0; }
+        .wysiwyg-content img { 
+            max-width: 100%; 
+            height: auto; 
+            border-radius: var(--radius-md); 
+            margin: var(--sp-2) auto; 
+            display: block; 
+            box-shadow: var(--shadow-md); 
+        }
+        .wysiwyg-content a { color: var(--accent-color-cyan); text-decoration: underline; }
+        .wysiwyg-content a:hover { color: var(--accent-color-cyan-alt); }
+
+        /* Styles pour le partage social */
+        .news-article__share { 
+            margin-top: var(--sp-3); 
+            padding-top: var(--sp-2); 
+            border-top: 1px solid var(--border-color); 
+            display: flex; 
+            align-items: center; 
+            gap: var(--sp-1); 
+            flex-wrap: wrap; 
+        }
+        .news-article__share-label { 
+            font-weight: var(--font-bold); 
+            color: var(--title-color); 
+            margin-right: var(--sp-0-5); 
+        }
+        .news-article__share-buttons button, .news-article__share-buttons a { 
+            font-size: 1.8rem; 
+            color: var(--text-color-light); 
+            transition: var(--transition-fast); 
+            padding: var(--sp-0-25); 
+            background: none; 
+            border: none; 
+            cursor: pointer; 
+            line-height: 1; /* Pour un bon alignement vertical des icônes */
+        } 
+        .news-article__share-buttons button:hover, .news-article__share-buttons a:hover { 
+            color: var(--accent-color-cyan); 
+            transform: translateY(-2px) scale(1.1); 
+        }
+
+        /* Styles pour la galerie d'images */
+        .news-gallery { margin-top: var(--sp-3); margin-bottom: var(--sp-2); }
+        .news-gallery__title { 
+            font-size: var(--h3-font-size); 
+            font-family: var(--title-font); 
+            font-weight: var(--font-bold); 
+            color: var(--first-color); 
+            margin-bottom: var(--sp-1-5); 
+        }
+        .news-gallery__grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+            gap: var(--sp-1); 
+        } 
+        .news-gallery__item img { 
+            width: 100%; 
+            height: 120px; 
+            object-fit: cover; 
+            border-radius: var(--radius-md); 
+            box-shadow: var(--shadow-sm); 
+            cursor: pointer; 
+            transition: var(--transition-fast); 
+        }
+        .news-gallery__item img:hover { opacity: 0.8; box-shadow: var(--shadow-md); }
+
+        /* Styles pour les articles liés */
+        .related-articles__section { 
+            margin-top: var(--sp-4); 
+            padding-top: var(--sp-3); 
+            border-top: 1px solid var(--border-color); 
+        }
+        .related-articles__title { 
+            font-size: var(--h2-font-size); 
+            font-family: var(--title-font); 
+            font-weight: var(--font-bold); 
+            color: var(--first-color); 
+            margin-bottom: var(--sp-2); 
+            text-align: center; 
+        }
+        /* Cache la description pour les cartes d'articles liés pour un affichage plus compact */
+        .related-articles__section .news__card .news__description { display: none; } 
+        .related-articles__section .news__card .news__link { margin-top: var(--sp-1); } 
+
+        /* Styles pour le fil d'Ariane (Breadcrumbs) */
+        .breadcrumb { padding: var(--sp-0-75) 0; margin-bottom: var(--sp-1-5); border-bottom: 1px solid var(--border-color); }
+        .breadcrumb ol { display: flex; flex-wrap: wrap; list-style: none; margin: 0; padding: 0; }
+        .breadcrumb li { font-size: var(--small-font-size); color: var(--text-color-light); }
+        .breadcrumb li a { color: var(--first-color); text-decoration: none; transition: var(--transition-fast); }
+        .breadcrumb li a:hover { color: var(--accent-color-cyan); }
+        .breadcrumb li ion-icon { 
+            font-size: 0.9em; 
+            margin: 0 var(--sp-0-25); 
+            vertical-align: middle; 
+            color: var(--text-color-light); 
+        } 
+        .breadcrumb li[aria-current="page"] { font-weight: var(--font-semi-bold); }
+
+        /* Styles des cartes d'actualités réutilisés de la page index */
+        /* Assure-toi que ces styles sont dans ton style.css principal */
+        .news__card {
+            background-color: var(--container-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease-in-out;
+            border: 1px solid var(--border-color);
+        }
+        .news__card:hover {
+            transform: translateY(-5px);
+        }
+        .news__img-link {
+            display: block;
+            flex-shrink: 0;
+        }
+        .news__img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+        .news__data {
+            padding: var(--sp-1-5);
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .news__meta {
+            font-size: var(--smaller-font-size);
+            color: var(--text-color-light);
+            margin-bottom: var(--sp-0-5);
+            display: flex;
+            align-items: center;
+        }
+        .news__category-separator {
+            margin: 0 var(--sp-0-5);
+            color: var(--border-color);
+        }
+        .news__category-link {
+            font-weight: var(--font-semi-bold);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+        .news__category-link:hover {
+            text-decoration: underline;
+        }
+        .news__title {
+            font-size: var(--h3-font-size);
+            font-family: var(--title-font);
+            font-weight: var(--font-bold);
+            margin-bottom: var(--sp-0-75);
+            line-height: 1.3;
+        }
+        .news__title a {
+            color: var(--title-color);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+        .news__title a:hover {
+            color: var(--accent-color-cyan);
+        }
+        .news__link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--first-color);
+            font-weight: var(--font-semi-bold);
+            text-decoration: none;
+            transition: color var(--transition-fast), transform var(--transition-fast);
+            margin-top: auto;
+        }
+        .news__link:hover {
+            color: var(--accent-color-cyan);
+            transform: translateX(5px);
+        }
+        .news__link ion-icon {
+            margin-left: var(--sp-0-5);
+            font-size: var(--normal-font-size);
+        }

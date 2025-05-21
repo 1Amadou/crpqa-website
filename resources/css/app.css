@@ -1,11 +1,11 @@
 /* resources/css/app.css */
-@import 'style.css'; /* Votre fichier principal */
-@import 'pages/home.css'; /* Styles spécifiques à l'accueil */
+@import 'aos/dist/aos.css'; /* Si vous l'importez ici */
+@import 'style.css';      /* Votre fichier principal */
 
+/* Directives Tailwind (généralement après vos imports personnalisés) */
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
-
 
 body {
     /* font-family et color sont déjà définis dans style.css */

@@ -2,8 +2,9 @@
 
 @section('header')
     <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-        {{ __('Modifier l\'Actualité :') }} <span class="italic">{{ Str::limit($newsItem->title, 40) }}</span>
-    </h2>
+    {{ __('Modifier l\'Actualité :') }} <span class="italic">{{ isset($newsItem->title) ? Str::limit($newsItem->title, 40) : 'Titre inconnu' }}</span>
+</h2>
+
 @endsection
 
 @section('content')
@@ -20,7 +21,10 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('admin.news.update', $newsItem) }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('admin.news.update', ['news' => $newsItem->id]) }}" enctype="multipart/form-data">
+
+
+
                 @csrf
                 @method('PUT')
 

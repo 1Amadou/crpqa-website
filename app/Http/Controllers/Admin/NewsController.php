@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon; // Pour la gestion des dates
 use Illuminate\Validation\Rule;
+use App\Models\NewsItem;
 
 class NewsController extends Controller
 {
@@ -60,56 +61,122 @@ class NewsController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        $validatedData = $request->validate($this->validationRules());
+{
+    // Tes règles de validation doivent être adaptées pour les champs traduisibles
+    // Par exemple, 'title.fr' => 'required|string|max:255',
+    // Mais pour simplifier ici, je vais supposer que $request->title est un tableau associatif { 'fr': '...', 'en': '...' }
+    // Ou bien tu gères la validation des traductions dans validationRules() plus tard.
 
-        $newsItem = new News();
-        $newsItem->title = $validatedData['title'];
-        $newsItem->slug = $validatedData['slug'];
-        // $newsItem->summary = $validatedData['summary']; // Déplacé pour la logique meta_description
-        // $newsItem->content = $validatedData['content']; // Déplacé pour la logique meta_description
-        $newsItem->is_featured = $request->boolean('is_featured');
-        $newsItem->user_id = Auth::id();
+    // On valide d'abord les champs non-traduisibles et le slug unique.
+    $request->validate([
+        'slug' => 'required|string|max:255|alpha_dash|unique:news,slug',
+        'published_at_date' => 'nullable|date_format:Y-m-d',
+        'published_at_time' => 'nullable|date_format:H:i',
+        'is_featured' => 'nullable|boolean',
+        'news_category_id' => 'nullable|exists:news_categories,id', // Ajoute la validation de la catégorie
+        'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+        'cover_image_alt' => 'nullable|string|max:255', // Ajoute l'alt pour l'image de couverture
+        'gallery_images_json' => 'nullable|array', // Si tu as un champ JSON pour la galerie
+    ]);
 
-        // Gestion de la date et heure de publication (ce code reste le même)
-        if ($request->filled('published_at_date') && $request->filled('published_at_time')) {
-            $newsItem->published_at = Carbon::createFromFormat('Y-m-d H:i', $validatedData['published_at_date'] . ' ' . $validatedData['published_at_time']);
-        } elseif ($request->filled('published_at_date')) {
-            $newsItem->published_at = Carbon::createFromFormat('Y-m-d', $validatedData['published_at_date'])->startOfDay();
-        } else {
-            $newsItem->published_at = null;
+    // Validation des champs traduisibles
+    // Assure-toi que ton formulaire envoie 'title.fr', 'title.en', etc.
+    $translatableRules = [
+        'title' => 'required|array',
+        'title.fr' => 'required|string|max:255',
+        'title.en' => 'nullable|string|max:255', // Exemple si l'anglais est optionnel
+        'content' => 'required|array',
+        'content.fr' => 'required|string',
+        'content.en' => 'nullable|string',
+        'summary' => 'nullable|array',
+        'summary.fr' => 'nullable|string|max:1000',
+        'summary.en' => 'nullable|string|max:1000',
+        'meta_title' => 'nullable|array',
+        'meta_title.fr' => 'nullable|string|max:255',
+        'meta_title.en' => 'nullable|string|max:255',
+        'meta_description' => 'nullable|array',
+        'meta_description.fr' => 'nullable|string|max:1000',
+        'meta_description.en' => 'nullable|string|max:1000',
+    ];
+    $validatedTranslations = $request->validate($translatableRules);
+
+
+    $newsItem = new News();
+    $newsItem->user_id = Auth::id();
+    $newsItem->slug = $request->slug;
+    $newsItem->news_category_id = $request->news_category_id; // Assignation de la catégorie
+    $newsItem->is_featured = $request->boolean('is_featured');
+    $newsItem->is_published = $request->boolean('is_published'); // Assure-toi d'avoir ce champ dans ton formulaire aussi.
+
+    // Assignation des champs traduisibles (Spatie Translatable gère le JSON en interne)
+    $newsItem->setTranslations('title', $validatedTranslations['title']);
+    $newsItem->setTranslations('content', $validatedTranslations['content']);
+    $newsItem->setTranslations('summary', $validatedTranslations['summary'] ?? []);
+
+    // Gestion des méta-titres et descriptions
+    // Si meta_title est fourni pour une langue, on l'utilise, sinon on prend le titre de cette langue
+    foreach (config('app.locales') as $locale) { // Suppose que tu as un tableau de locales dans config/app.php
+        $metaTitle = $validatedTranslations['meta_title'][$locale] ?? null;
+        if (empty($metaTitle)) {
+            $metaTitle = Str::limit(strip_tags($validatedTranslations['title'][$locale] ?? ''), 70, '');
         }
+        $newsItem->setTranslation('meta_title', $locale, $metaTitle);
 
-        if ($request->hasFile('cover_image')) {
-            $fileName = Str::slug($validatedData['title']) . '-' . time() . '.' . $request->file('cover_image')->getClientOriginalExtension();
-            $path = $request->file('cover_image')->storeAs('news_covers', $fileName, 'public');
-            $newsItem->cover_image_path = $path;
+        $metaDescription = $validatedTranslations['meta_description'][$locale] ?? null;
+        if (empty($metaDescription)) {
+            $summaryForMeta = strip_tags($validatedTranslations['summary'][$locale] ?? $validatedTranslations['content'][$locale] ?? '');
+            $metaDescription = Str::limit($summaryForMeta, 160, '...');
         }
-
-        //  SEO ET LES AUTRES TEXTES :
-        $newsItem->summary = $validatedData['summary']; // Assignation du résumé
-        $newsItem->content = $validatedData['content']; // Assignation du contenu
-
-        // Si meta_title est fourni, on l'utilise, sinon on prend les 60 premiers caractères du titre.
-        $newsItem->meta_title = $validatedData['meta_title'] ?? Str::limit(strip_tags($validatedData['title']), 70, '');
-        // Si meta_description est fournie, on l'utilise, sinon on prend les 160 premiers caractères du résumé (s'il existe) ou du contenu.
-        $summaryForMeta = $validatedData['summary'] ? strip_tags($validatedData['summary']) : strip_tags($validatedData['content']);
-        $newsItem->meta_description = $validatedData['meta_description'] ?? Str::limit($summaryForMeta, 160, '...');
-
-
-        $newsItem->save();
-
-        return redirect()->route('admin.news.index')
-                        ->with('success', 'Actualité "' . $newsItem->title . '" créée avec succès.');
+        $newsItem->setTranslation('meta_description', $locale, $metaDescription);
     }
+
+
+    // Gestion de la date et heure de publication
+    if ($request->filled('published_at_date') && $request->filled('published_at_time')) {
+        $newsItem->published_at = Carbon::createFromFormat('Y-m-d H:i', $request->published_at_date . ' ' . $request->published_at_time);
+    } elseif ($request->filled('published_at_date')) {
+        $newsItem->published_at = Carbon::createFromFormat('Y-m-d', $request->published_at_date)->startOfDay();
+    } else {
+        $newsItem->published_at = null;
+    }
+
+    // Gestion de l'image de couverture
+    if ($request->hasFile('cover_image')) {
+        // Supprime l'ancienne image si elle existe
+        if ($newsItem->cover_image_path && Storage::disk('public')->exists($newsItem->cover_image_path)) {
+            Storage::disk('public')->delete($newsItem->cover_image_path);
+        }
+        $fileName = Str::slug($newsItem->getTranslation('title', 'fr', false)) . '-' . time() . '.' . $request->file('cover_image')->getClientOriginalExtension();
+        $path = $request->file('cover_image')->storeAs('news_covers', $fileName, 'public');
+        $newsItem->cover_image_path = $path;
+        $newsItem->cover_image_alt = $request->cover_image_alt ?? $newsItem->getTranslation('title', 'fr', false); // Utilise l'alt fourni ou le titre
+    }
+
+    // Gestion de la galerie d'images (si tu as un champ JSON pour ça)
+    // IMPORTANT : la structure du JSON de la galerie doit potentiellement contenir les traductions.
+    // Par exemple : [{"url": "...", "alt": {"fr": "...", "en": "..."}, "caption": {"fr": "...", "en": "..."}}]
+    // Ou si tu gères les traductions de caption via getLocalizedField() dans la vue, le JSON peut être simple:
+    // [{"url": "...", "alt": "...", "caption": "..."}]
+    if ($request->has('gallery_images_json')) {
+        $newsItem->gallery_images_json = $request->gallery_images_json;
+    } else {
+        $newsItem->gallery_images_json = []; // Assure-toi que c'est un tableau vide par défaut si pas de galerie
+    }
+
+
+    $newsItem->save();
+
+    return redirect()->route('admin.news.index')
+        ->with('success', 'Actualité "' . $newsItem->getTranslation('title', 'fr', false) . '" créée avec succès.');
+}
 
     /**
      * Display the specified resource.
      */
     public function show(News $news) // Laravel va automatiquement trouver l'actualité par son ID ou slug si configuré
     {
-        $news->load('user'); // Charger l'auteur
-        return view('admin.news.show', ['newsItem' => $news]); // Renommer en $newsItem pour la vue
+        $news->load('user');
+        return view('admin.news.show', compact('news'));// Renommer en $newsItem pour la vue
     }
 
     /**
@@ -117,58 +184,112 @@ class NewsController extends Controller
      */
     public function edit(News $news)
     {
-        return view('admin.news.edit', ['newsItem' => $news]);
+        // $newsItem = NewsItem::where('slug', $newsItem)->firstOrFail();
+        return view('admin.news.edit', compact('news'));
     }
+
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, News $news)
-    {
-        $validatedData = $request->validate($this->validationRules($news));
+    public function update(Request $request, News $newsItem) // Utilise News au lieu de NewsItem pour le route model binding
+{
+    // Validation du slug unique, en ignorant l'article actuel
+    $request->validate([
+        'slug' => 'required|string|max:255|alpha_dash|unique:news,slug,' . $newsItem->id,
+        'published_at_date' => 'nullable|date_format:Y-m-d',
+        'published_at_time' => 'nullable|date_format:H:i',
+        'is_featured' => 'nullable|boolean',
+        'news_category_id' => 'nullable|exists:news_categories,id',
+        'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+        'cover_image_alt' => 'nullable|string|max:255',
+        'gallery_images_json' => 'nullable|array',
+    ]);
 
-        $news->title = $validatedData['title'];
-        $news->slug = $validatedData['slug'];
-        // $news->summary = $validatedData['summary']; // Déplacé
-        // $news->content = $validatedData['content']; // Déplacé
-        $news->is_featured = $request->boolean('is_featured');
+    // Validation des champs traduisibles
+    $translatableRules = [
+        'title' => 'required|array',
+        'title.fr' => 'required|string|max:255',
+        'title.en' => 'nullable|string|max:255',
+        'content' => 'required|array',
+        'content.fr' => 'required|string',
+        'content.en' => 'nullable|string',
+        'summary' => 'nullable|array',
+        'summary.fr' => 'nullable|string|max:1000',
+        'summary.en' => 'nullable|string|max:1000',
+        'meta_title' => 'nullable|array',
+        'meta_title.fr' => 'nullable|string|max:255',
+        'meta_title.en' => 'nullable|string|max:255',
+        'meta_description' => 'nullable|array',
+        'meta_description.fr' => 'nullable|string|max:1000',
+        'meta_description.en' => 'nullable|string|max:1000',
+    ];
+    $validatedTranslations = $request->validate($translatableRules);
 
-        // Gestion de la date et heure de publication (ce code reste le même)
-        if ($request->filled('published_at_date') && $request->filled('published_at_time')) {
-            $news->published_at = Carbon::createFromFormat('Y-m-d H:i', $validatedData['published_at_date'] . ' ' . $validatedData['published_at_time']);
-        } elseif ($request->filled('published_at_date')) {
-            $news->published_at = Carbon::createFromFormat('Y-m-d', $validatedData['published_at_date'])->startOfDay();
-        } else {
-            $news->published_at = null;
+
+    $newsItem->slug = $request->slug;
+    $newsItem->news_category_id = $request->news_category_id;
+    $newsItem->is_featured = $request->boolean('is_featured');
+    $newsItem->is_published = $request->boolean('is_published');
+
+
+    // Assignation des champs traduisibles
+    $newsItem->setTranslations('title', $validatedTranslations['title']);
+    $newsItem->setTranslations('content', $validatedTranslations['content']);
+    $newsItem->setTranslations('summary', $validatedTranslations['summary'] ?? []);
+
+    // Gestion des méta-titres et descriptions
+    foreach (config('app.locales') as $locale) {
+        $metaTitle = $validatedTranslations['meta_title'][$locale] ?? null;
+        if (empty($metaTitle)) {
+            $metaTitle = Str::limit(strip_tags($validatedTranslations['title'][$locale] ?? ''), 70, '');
         }
+        $newsItem->setTranslation('meta_title', $locale, $metaTitle);
 
-        if ($request->hasFile('cover_image')) {
-            if ($news->cover_image_path && Storage::disk('public')->exists($news->cover_image_path)) {
-                Storage::disk('public')->delete($news->cover_image_path);
-            }
-            $fileName = Str::slug($validatedData['title']) . '-' . time() . '.' . $request->file('cover_image')->getClientOriginalExtension();
-            $path = $request->file('cover_image')->storeAs('news_covers', $fileName, 'public');
-            $news->cover_image_path = $path;
-        } elseif ($request->boolean('remove_cover_image')) {
-            if ($news->cover_image_path && Storage::disk('public')->exists($news->cover_image_path)) {
-                Storage::disk('public')->delete($news->cover_image_path);
-            }
-            $news->cover_image_path = null;
+        $metaDescription = $validatedTranslations['meta_description'][$locale] ?? null;
+        if (empty($metaDescription)) {
+            $summaryForMeta = strip_tags($validatedTranslations['summary'][$locale] ?? $validatedTranslations['content'][$locale] ?? '');
+            $metaDescription = Str::limit($summaryForMeta, 160, '...');
         }
-
-        //  LES CHAMPS SEO ET LES AUTRES TEXTES :
-        $news->summary = $validatedData['summary'];
-        $news->content = $validatedData['content'];
-
-        $news->meta_title = $validatedData['meta_title'] ?? Str::limit(strip_tags($validatedData['title']), 70, '');
-        $summaryForMeta = $validatedData['summary'] ? strip_tags($validatedData['summary']) : strip_tags($validatedData['content']);
-        $news->meta_description = $validatedData['meta_description'] ?? Str::limit($summaryForMeta, 160, '...');
-
-        $news->save();
-
-        return redirect()->route('admin.news.index')
-                        ->with('success', 'Actualité "' . $news->title . '" mise à jour avec succès.');
+        $newsItem->setTranslation('meta_description', $locale, $metaDescription);
     }
+
+    // Gestion de la date et heure de publication
+    if ($request->filled('published_at_date') && $request->filled('published_at_time')) {
+        $newsItem->published_at = Carbon::createFromFormat('Y-m-d H:i', $request->published_at_date . ' ' . $request->published_at_time);
+    } elseif ($request->filled('published_at_date')) {
+        $newsItem->published_at = Carbon::createFromFormat('Y-m-d', $request->published_at_date)->startOfDay();
+    } else {
+        $newsItem->published_at = null;
+    }
+
+    // Gestion de l'image de couverture
+    if ($request->hasFile('cover_image')) {
+        if ($newsItem->cover_image_path && Storage::disk('public')->exists($newsItem->cover_image_path)) {
+            Storage::disk('public')->delete($newsItem->cover_image_path);
+        }
+        $fileName = Str::slug($newsItem->getTranslation('title', 'fr', false)) . '-' . time() . '.' . $request->file('cover_image')->getClientOriginalExtension();
+        $path = $request->file('cover_image')->storeAs('news_covers', $fileName, 'public');
+        $newsItem->cover_image_path = $path;
+        $newsItem->cover_image_alt = $request->cover_image_alt ?? $newsItem->getTranslation('title', 'fr', false);
+    } elseif ($request->boolean('remove_cover_image')) {
+        if ($newsItem->cover_image_path && Storage::disk('public')->exists($newsItem->cover_image_path)) {
+            Storage::disk('public')->delete($newsItem->cover_image_path);
+        }
+        $newsItem->cover_image_path = null;
+        $newsItem->cover_image_alt = null;
+    }
+
+    // Gestion de la galerie d'images
+    if ($request->has('gallery_images_json')) {
+        $newsItem->gallery_images_json = $request->gallery_images_json;
+    } else {
+        $newsItem->gallery_images_json = [];
+    }
+
+    $news->save();
+    return redirect()->route('admin.news.index')->with('success', 'Actualité "' . $news->getTranslation('title', 'fr', false) . '" mise à jour avec succès.');
+}
 
     /**
      * Remove the specified resource from storage.
@@ -182,8 +303,6 @@ class NewsController extends Controller
         }
         
         $news->delete();
-
-        return redirect()->route('admin.news.index')
-                         ->with('success', 'Actualité "' . $newsTitle . '" supprimée avec succès.');
+    return redirect()->route('admin.news.index')->with('success', 'Actualité "' . $news->getTranslation('title', 'fr', false) . '" supprimée avec succès.');
     }
 }
