@@ -46,9 +46,16 @@
     --}}
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     {{-- Styles principaux et JS via Vite --}}
     {{-- app.css devrait importer votre style.css ET le CSS d'AOS (si installé via npm) --}}
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/public-main.js'])
+
+    {{-- Dans la section <head> de layouts.public.blade.php --}}
+<link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+
+{{-- Avant la balise </body> de layouts.public.blade.php (et AVANT votre public-main.js) --}}
+<script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
 
     {{-- Styles spécifiques à une page --}}
     @stack('styles')
@@ -89,16 +96,17 @@
         <span class="sr-only">Remonter en haut</span>
     </a>
 
-    {{-- Scripts globaux (AOS est initialisé dans public-main.js) --}}
-    {{-- Si vous avez installé Ionicons via npm/yarn, il sera bundlé. Sinon, vous avez besoin d'un script CDN pour Ionicons.
-         Exemple avec CDN (si non inclus via npm) :
+    
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-    Il est préférable de l'installer via npm: npm install ionicons
-    et l'importer dans votre app.js ou public-main.js si nécessaire, ou simplement utiliser les web components.
-    Votre `style.css` utilise `ion-icon` directement, ce qui suppose que les composants sont globalement disponibles.
-    --}}
-
+    
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+  AOS.init({
+    duration: 800, 
+    once: true    
+  });
+</script>
     @stack('scripts')
 </body>
 </html>

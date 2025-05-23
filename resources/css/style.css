@@ -1515,3 +1515,363 @@ img, svg, video { /* MODERNISATION: Ajout de svg et video */
             margin-left: var(--sp-0-5);
             font-size: var(--normal-font-size);
         }
+
+
+        /*--------------------------------------------------------------
+# Sections de la Page "À Propos" - Styles Additionnels
+--------------------------------------------------------------*/
+
+/* Styles généraux déjà fournis précédemment (Hero, Alternating Layout, Icon Box, Director Card, etc.)
+   sont supposés être présents. Ce qui suit complète pour les nouvelles sections. */
+
+/*--------------------------------------------------------------
+# Timeline Historique
+--------------------------------------------------------------*/
+.timeline-wrapper {
+    position: relative;
+    padding: 40px 0;
+    max-width: 900px; /* Ajustez selon vos préférences */
+    margin: 0 auto;
+}
+
+.timeline {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    position: relative;
+}
+
+/* La ligne verticale centrale de la timeline */
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 100%;
+    background-color: var(--first-color-lighter, #e9ecef);
+    border-radius: 2px;
+}
+
+.timeline-item {
+    padding: 20px 0;
+    position: relative;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-icon {
+    position: absolute;
+    left: 50%;
+    top: 50%; /* S'aligne verticalement avec le contenu si celui-ci est d'une hauteur fixe */
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    background-color: var(--first-color, #007bff);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border: 3px solid #fff; /* Ou var(--body-color) pour se fondre avec le fond */
+    box-shadow: 0 0 0 4px var(--first-color, #007bff), 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.timeline-icon i {
+    font-size: 1.5rem; /* Ajustez la taille de l'icône */
+}
+
+.timeline-content {
+    position: relative;
+    width: 45%; /* Laisse de la place pour la ligne centrale et l'icône */
+    background-color: var(--container-color, #fff);
+    padding: 20px 25px;
+    border-radius: var(--radius-medium, 8px);
+    box-shadow: 0 4px 15px rgba(var(--first-color-rgb, 0,0,0), 0.08);
+    border: 1px solid var(--border-color, #eee);
+}
+
+.timeline-content.left {
+    float: left;
+    clear: left;
+    text-align: right; /* Ou gardez à gauche si vous préférez */
+}
+
+.timeline-content.right {
+    float: right;
+    clear: right;
+    text-align: left; /* Ou gardez à gauche si vous préférez */
+}
+
+/* Flèche pour les bulles de contenu */
+.timeline-content::before {
+    content: '';
+    position: absolute;
+    top: 20px; /* Ajustez pour aligner avec l'icône */
+    width: 0;
+    height: 0;
+    border-style: solid;
+}
+
+.timeline-content.left::before {
+    right: -10px; /* Position de la flèche pour les éléments à gauche */
+    border-width: 10px 0 10px 10px;
+    border-color: transparent transparent transparent var(--border-color, #eee);
+}
+.timeline-content.right::before {
+    left: -10px; /* Position de la flèche pour les éléments à droite */
+    border-width: 10px 10px 10px 0;
+    border-color: transparent var(--border-color, #eee) transparent transparent;
+}
+/* Pour un effet de double bordure sur la flèche (plus complexe, optionnel) */
+/* .timeline-content.left::after { content: ''; position: absolute; top: 21px; right: -8px; border-width: 9px 0 9px 9px; border-style: solid; border-color: transparent transparent transparent var(--container-color, #fff); } */
+/* .timeline-content.right::after { content: ''; position: absolute; top: 21px; left: -8px; border-width: 9px 9px 9px 0; border-style: solid; border-color: transparent var(--container-color, #fff) transparent transparent; } */
+
+
+.timeline-year {
+    display: block;
+    font-size: var(--small-font-size, 0.875rem);
+    color: var(--first-color, #007bff);
+    font-weight: var(--font-semi-bold, 600);
+    margin-bottom: var(--mb-0-25, 0.25rem);
+}
+
+.timeline-title {
+    font-size: var(--h3-font-size, 1.25rem);
+    color: var(--title-color, #333);
+    margin-top: 0;
+    margin-bottom: var(--mb-0-5, 0.5rem);
+    font-weight: var(--font-bold, 700);
+}
+
+.timeline-description {
+    font-size: var(--normal-font-size, 1rem);
+    line-height: 1.6;
+    color: var(--text-color, #555);
+    margin-bottom: 0;
+}
+
+/* Responsive Timeline */
+@media (max-width: 767.98px) {
+    .timeline::before {
+        left: 25px; /* Déplace la ligne sur la gauche */
+        transform: translateX(0);
+    }
+
+    .timeline-item {
+        padding-left: 50px; /* Espace pour la ligne et l'icône */
+        padding-bottom: 30px; /* Augmente l'espacement vertical */
+    }
+    .timeline-item:last-child {
+        padding-bottom: 10px;
+    }
+
+    .timeline-icon {
+        left: 25px; /* Aligne l'icône avec la nouvelle position de la ligne */
+        transform: translate(-50%, -50%); /* Garde le centrage vertical si possible */
+         /* Ajustement pour que l'icône soit sur la ligne */
+        top: 0; /* Aligner en haut du contenu pour les petits écrans */
+        transform: translateX(-50%) translateY(50%); /* Ajuster pour le flux normal */
+    }
+    .timeline-item .timeline-icon { /* Cible plus spécifique pour petits écrans */
+        top: 0;
+        transform: translate(-50%, 30px); /* Essayer de centrer par rapport au titre */
+    }
+
+
+    .timeline-content,
+    .timeline-content.left,
+    .timeline-content.right {
+        width: 100%; /* Pleine largeur moins le padding de timeline-item */
+        float: none;
+        text-align: left; /* Standardiser l'alignement du texte */
+        margin-top: 10px; /* Espace par rapport à l'icône */
+    }
+
+    .timeline-content.left::before,
+    .timeline-content.right::before {
+        left: -10px; /* Toutes les flèches pointent vers la gauche (vers la ligne) */
+        right: auto;
+        border-width: 10px 10px 10px 0;
+        border-color: transparent var(--border-color, #eee) transparent transparent;
+    }
+    /* .timeline-content.left::after,
+    .timeline-content.right::after {
+        left: -8px; right: auto; border-width: 9px 9px 9px 0; border-color: transparent var(--container-color, #fff) transparent transparent;
+    } */
+}
+
+
+/*--------------------------------------------------------------
+# Carrousel des Partenaires (SwiperJS)
+--------------------------------------------------------------*/
+.partners-section {
+    background-color: var(--first-color-lightest, #f8f9fa); /* Un fond léger pour se démarquer */
+    padding-top: var(--mb-3);
+    padding-bottom: var(--mb-3);
+}
+
+.partners-carousel .swiper-slide {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 120px; /* Hauteur fixe pour chaque slide, ajustez si besoin */
+}
+
+.partner-logo-item { /* Styles déjà fournis pour les logos, s'assurent qu'ils s'intègrent bien */
+    padding: var(--mb-0-75);
+    background-color: #fff; /* Fond blanc pour les logos, même si le slide a un autre fond */
+    border-radius: var(--radius);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%; /* Le logo prend la largeur du slide, ajusté par SwiperJS */
+    height: 90px; /* Hauteur fixe pour la "carte" du logo */
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.partner-logo-item:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transform: translateY(-3px);
+}
+.partner-logo-item img {
+    max-width: 90%; /* Limite la largeur de l'image dans son conteneur */
+    max-height: 50px; /* Limite la hauteur de l'image */
+    object-fit: contain;
+    filter: grayscale(80%);
+    opacity: 0.8;
+    transition: all 0.3s ease;
+}
+.partner-logo-item:hover img {
+    filter: grayscale(0%);
+    opacity: 1;
+    /* transform: scale(1.05); Retiré car le scale est sur partner-logo-item au survol */
+}
+
+/* Styles pour la pagination et la navigation Swiper (optionnel, si vous les utilisez) */
+.partners-carousel .swiper-pagination-bullet {
+    background-color: var(--first-color, #007bff);
+    opacity: 0.5;
+}
+.partners-carousel .swiper-pagination-bullet-active {
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+.partners-carousel .swiper-button-next,
+.partners-carousel .swiper-button-prev {
+    color: var(--first-color, #007bff);
+    background-color: rgba(255,255,255,0.8);
+    border-radius: 50%;
+    width: 40px; /* Ajustez la taille */
+    height: 40px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+.partners-carousel .swiper-button-next:hover,
+.partners-carousel .swiper-button-prev:hover {
+    background-color: var(--first-color, #007bff);
+    color: #fff;
+}
+.partners-carousel .swiper-button-next::after,
+.partners-carousel .swiper-button-prev::after {
+    font-size: 1.2rem; /* Ajustez la taille des icônes de flèche */
+    font-weight: bold;
+}
+
+/* Cache les flèches par défaut sur mobile si elles encombrent */
+@media (max-width: 767.98px) {
+    .partners-carousel .swiper-button-next,
+    .partners-carousel .swiper-button-prev {
+        display: none;
+    }
+}
+
+
+/*--------------------------------------------------------------
+# Section Dernières Publications (AJAX)
+--------------------------------------------------------------*/
+.publications-section {
+    /* Styles pour la section globale si nécessaire */
+}
+
+.latest-publications-container {
+    min-height: 150px; /* Pour éviter les sauts de page pendant le chargement */
+    position: relative;
+}
+
+/* Spinner de chargement simple (vous pouvez utiliser une image GIF ou un spinner plus complexe) */
+.loading-spinner {
+    border: 4px solid var(--first-color-lighter, #f3f3f3);
+    border-top: 4px solid var(--first-color, #007bff);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto; /* Centrer le spinner */
+}
+.loading-message {
+    font-style: italic;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Styles pour la liste des publications une fois chargée */
+.publications-list {
+    list-style: none;
+    padding: 0;
+    text-align: left; /* Ou center si vous préférez */
+    max-width: 700px; /* Limiter la largeur pour la lisibilité */
+    margin: 0 auto; /* Centrer la liste */
+}
+
+.publication-item {
+    padding: var(--mb-1) 0; /* Espace vertical entre les items */
+    border-bottom: 1px solid var(--border-color, #eee);
+    transition: background-color 0.3s ease;
+}
+.publication-item:last-child {
+    border-bottom: none;
+}
+.publication-item:hover {
+    background-color: var(--first-color-lightest, #f8f9fa); /* Léger fond au survol */
+}
+
+.publication-item h5 { /* Titre de la publication */
+    margin-bottom: var(--mb-0-25);
+    font-size: var(--h3-font-size); /* Ajustez si nécessaire */
+}
+.publication-item h5 a {
+    color: var(--first-color-dark, #0056b3);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+.publication-item h5 a:hover {
+    color: var(--first-color, #007bff);
+    text-decoration: underline;
+}
+
+.publication-item .publication-meta { /* Pour les auteurs, année, etc. */
+    font-size: var(--small-font-size, 0.875rem);
+    color: var(--text-color-light, #6c757d);
+    margin-bottom: 0;
+}
+
+/* Si vous avez beaucoup de publications et que vous voulez les afficher en colonnes sur grands écrans */
+
+@media (min-width: 992px) {
+    .publications-list {
+        column-count: 2;
+        column-gap: 30px;
+    }
+    .publication-item {
+        break-inside: avoid-column; 
+    }
+}

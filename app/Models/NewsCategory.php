@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\HasLocalizedFields;
+
 
 class NewsCategory extends Model
 {
-    use HasFactory;
+    use HasFactory, HasLocalizedFields;
 
     /**
      * The attributes that are mass assignable.
@@ -35,8 +37,10 @@ class NewsCategory extends Model
      * Get the news items for the category.
      * Définit la relation "a plusieurs" avec le modèle News.
      */
-    public function news(): HasMany
+    public function newsItems(): HasMany // Le nom 'newsItems' est bien pour la clarté
     {
-        return $this->hasMany(News::class, 'news_category_id');
+        // 'news_category_id' est la clé étrangère dans la table 'news' (NewsItem)
+        // 'id' est la clé primaire dans la table 'news_categories' (NewsCategory)
+        return $this->hasMany(NewsItem::class, 'news_category_id', 'id');
     }
 }

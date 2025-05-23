@@ -23,52 +23,20 @@ class ShareSiteSettings
         $this->app = $app;
     }
 
-    public function handle(Request $request, Closure $next): Response
-    {
-        // Si ce n'est pas une requête admin
-        if (!$request->is('admin/*') && !$request->is('admin') && !$request->is('api/*')) {
-            if (Schema::hasTable('site_settings')) {
-                try {
-                    // Définir ou récupérer depuis le conteneur (pour s'assurer que c'est un singleton par requête)
-                    if (!$this->app->bound('siteSettings')) { // Vérifier si déjà lié pour cette requête
-                        $siteSettingsArray = Cache::rememberForever('site_settings_processed', function () {
-                            $settingsFromDb = SiteSetting::all();
-                            $processedSettings = [];
-                            foreach ($settingsFromDb as $setting) {
-                                if (method_exists($setting, 'getLocalizedField')) {
-                                    $processedSettings[$setting->key] = $setting->getLocalizedField('value');
-                                } else {
-                                    $processedSettings[$setting->key] = $setting->value;
-                                }
-                            }
-                            return $processedSettings;
-                        });
-                        $this->app->instance('siteSettings', $siteSettingsArray); // Lier l'instance au conteneur
-                    } else {
-                        $siteSettingsArray = $this->app->make('siteSettings');
-                    }
+    public function handle(Request $request, Closure $next)
+{
+    // Récupérer les settings SANS CACHE pour le test
+    $settingsModel = SiteSetting::first(); // Ou SiteSetting::find(1);
+    $settingsArray = [];
 
-                    View::share('siteSettings', $siteSettingsArray);
-
-                } catch (\Exception $e) {
-                    Log::error("Erreur ShareSiteSettings lors du chargement/partage des SiteSettings : " . $e->getMessage());
-                    $emptySettings = [];
-                    View::share('siteSettings', $emptySettings);
-                    if (!$this->app->bound('siteSettings')) {
-                         $this->app->instance('siteSettings', $emptySettings);
-                    }
-                }
-            } else {
-                Log::warning('ShareSiteSettings: La table site_settings n\'existe pas.');
-                $emptySettings = [];
-                View::share('siteSettings', $emptySettings);
-                if (!$this->app->bound('siteSettings')) {
-                    $this->app->instance('siteSettings', $emptySettings);
-                }
-            }
-        }
-        return $next($request);
+    if ($settingsModel) {
+        $settingsArray = $settingsModel->toArray();
     }
+
+    View::share('siteSettings', $settingsArray);
+
+    return $next($request);
+}
 
     
 }

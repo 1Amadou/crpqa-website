@@ -1,11 +1,16 @@
 {{-- resources/views/layouts/partials/public-header.blade.php --}}
 <header class="header" id="header" x-data="{ mobileMenuOpen: false }">
     <nav class="nav container">
-        <a href="{{ route('public.home') }}" class="nav__logo" title="Accueil {{ $siteSettings['site_name_short'] ?? $siteSettings['site_name'] ?? 'CRPQA' }}">
-            {{-- Si vous avez un logo image, vous pouvez l'ajouter ici à la place ou en plus du texte --}}
-            {{-- <img src="{{ asset('assets/logo_crpqa.svg') }}" alt="Logo CRPQA" class="nav__logo-img"> --}}
-            {{-- <span class="nav__logo-text">{{ $siteSettings['site_name_short'] ?? $siteSettings['site_name'] ?? 'CRPQA' }}</span> --}}
+        <a href="{{ route('public.home') }}" class="flex items-center space-x-3 rtl:space-x-reverse">
+            {{-- Utilise 'logo_path' ici --}}
+            @if(isset($siteSettings['logo_path']) && $siteSettings['logo_path'])
+                <img src="{{ asset('storage/' . $siteSettings['logo_path']) }}" class="h-12" alt="{{ $siteSettings['site_name'] ?? config('app.name', 'CRPQA') }} Logo">
+            @else
+                <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">{{ $siteSettings['site_name'] ?? config('app.name', 'CRPQA') }}</span>
+            @endif
         </a>
+
+        {{-- Menu de navigation --}}
 
         <div class="nav__menu" id="nav-menu" :class="{ 'show-menu': mobileMenuOpen }">
             <ul class="nav__list">
@@ -15,11 +20,9 @@
                     </a>
                 </li>
                 <li class="nav__item">
-                    {{-- Assurez-vous que 'a-propos' est le slug correct de votre page statique --}}
-                    <a href="{{ route('public.page', ['staticPage' => $siteSettings['about_page_slug'] ?? 'a-propos']) }}"
-                       class="nav__link {{ (request()->is(($siteSettings['about_page_slug'] ?? 'a-propos').'*')) ? 'active-link' : '' }}">
-                        À Propos
-                    </a>
+                            <a href="{{ route('public.about') }}" class="nav__link {{ request()->routeIs('public.about') ? 'active-link' : '' }}">
+                                <i class="uil uil-info-circle nav__icon"></i> À Propos
+                            </a>
                 </li>
 
                 {{-- Menu déroulant Vie du Centre --}}

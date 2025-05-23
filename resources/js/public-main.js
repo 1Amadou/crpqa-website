@@ -201,4 +201,159 @@ import 'aos/dist/aos.css'; // S'assure que les styles AOS sont inclus dans votre
         console.info("CRPQA Public JS initialisé et prêt.");
     });
 
+    document.addEventListener('DOMContentLoaded', function() {
+
+    /**
+     * ------------------------------------------------------------------------
+     * Carrousel des Partenaires (SwiperJS)
+     * ------------------------------------------------------------------------
+     */
+    const partnersCarousel = document.querySelector('.partners-carousel');
+    if (partnersCarousel && typeof Swiper !== 'undefined') {
+        // Vérifie que l'élément existe ET que la librairie Swiper est chargée
+        try {
+            new Swiper(partnersCarousel, {
+                // Options de base (vous pouvez les personnaliser)
+                loop: true,
+                slidesPerView: 2, // Nombre de slides visibles sur les plus petits écrans
+                spaceBetween: 20, // Espace entre les slides en pixels
+                grabCursor: true,
+                autoplay: {
+                    delay: 4000, // Délai entre les transitions en ms
+                    disableOnInteraction: false, // L'autoplay ne s'arrête pas après interaction manuelle
+                },
+                pagination: {
+                    el: '.partners-carousel__pagination', // Sélecteur de votre conteneur de pagination
+                    clickable: true,
+                },
+                navigation: {
+                    nextEl: '.partners-carousel__nav-next', // Sélecteur de votre bouton "suivant"
+                    prevEl: '.partners-carousel__nav-prev', // Sélecteur de votre bouton "précédent"
+                },
+                // Points de rupture pour la responsivité
+                breakpoints: {
+                    576: { // sm
+                        slidesPerView: 3,
+                        spaceBetween: 25
+                    },
+                    768: { // md
+                        slidesPerView: 4,
+                        spaceBetween: 30
+                    },
+                    992: { // lg
+                        slidesPerView: 5,
+                        spaceBetween: 35
+                    },
+                    1200: { // xl
+                        slidesPerView: 6, // Ajustez en fonction de la largeur de vos logos
+                        spaceBetween: 40
+                    }
+                }
+            });
+            // console.log('Swiper for partners initialized.');
+        } catch (e) {
+            console.error('Error initializing Swiper for partners:', e);
+        }
+    } else if (partnersCarousel && typeof Swiper === 'undefined') {
+        console.warn('Swiper library is not loaded, but .partners-carousel element exists.');
+    }
+
+
+    /**
+     * ------------------------------------------------------------------------
+     * Chargement AJAX des Dernières Publications
+     * ------------------------------------------------------------------------
+     */
+    const publicationsContainer = document.getElementById('latest-publications-content');
+    if (publicationsContainer) {
+        const loadingSpinner = publicationsContainer.querySelector('.loading-spinner');
+        const loadingMessage = publicationsContainer.querySelector('.loading-message');
+        const publicationsRoute = "{{ route('api.latest-publications', [], false) }}"; // Génère l'URL sans le domaine
+
+        // Vérifier si la route est un placeholder ou une vraie URL
+        if (publicationsRoute && !publicationsRoute.includes('{{') && !publicationsRoute.includes('}}')) {
+            fetch(publicationsRoute)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.status + ' ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (loadingSpinner) loadingSpinner.style.display = 'none';
+                    if (loadingMessage) loadingMessage.style.display = 'none';
+
+                    if (data.publications && data.publications.length > 0) {
+                        const ul = document.createElement('ul');
+                        ul.classList.add('publications-list');
+
+                        data.publications.forEach(pub => {
+                            const li = document.createElement('li');
+                            li.classList.add('publication-item');
+
+                            // Créer le titre avec lien
+                            const titleLink = document.createElement('a');
+                            titleLink.href = pub.url || '#'; // Lien de la publication
+                            if (pub.url) { // N'ouvrir dans un nouvel onglet que si l'URL existe
+                                titleLink.target = '_blank';
+                                titleLink.rel = 'noopener noreferrer';
+                            }
+                            titleLink.textContent = pub.title || 'Titre non disponible';
+
+                            const titleH5 = document.createElement('h5');
+                            titleH5.appendChild(titleLink);
+
+                            // Créer les métadonnées
+                            const metaP = document.createElement('p');
+                            metaP.classList.add('publication-meta');
+                            let metaText = [];
+                            if(pub.authors) metaText.push(`Auteurs: ${pub.authors}`);
+                            if(pub.year) metaText.push(`Année: ${pub.year}`);
+                            if(pub.journal) metaText.push(`Journal: ${pub.journal}`); // Si vous avez cette info
+                            metaP.textContent = metaText.join(' - ') || 'Informations non disponibles';
+
+                            li.appendChild(titleH5);
+                            li.appendChild(metaP);
+                            ul.appendChild(li);
+                        });
+                        publicationsContainer.appendChild(ul);
+                        // console.log('Latest publications loaded.');
+                    } else {
+                        publicationsContainer.innerHTML = '<p class="text-muted">Aucune publication récente à afficher.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching latest publications:', error);
+                    if (loadingSpinner) loadingSpinner.style.display = 'none';
+                    if (loadingMessage) loadingMessage.style.display = 'none';
+                    publicationsContainer.innerHTML = '<p class="text-danger">Erreur lors du chargement des publications. Veuillez réessayer plus tard.</p>';
+                });
+        } else {
+            console.warn('Route for latest publications is not properly defined. AJAX call skipped.');
+            if (loadingSpinner) loadingSpinner.style.display = 'none';
+            if (loadingMessage) loadingMessage.style.display = 'none';
+            publicationsContainer.innerHTML = '<p class="text-warning">La section des publications est en cours de configuration.</p>';
+        }
+    }
+
+    /**
+     * ------------------------------------------------------------------------
+     * Timeline Historique (Animations gérées par AOS)
+     * ------------------------------------------------------------------------
+     */
+    // Pour la timeline, les animations sont principalement gérées par les attributs `data-aos`
+    // dans le HTML et la bibliothèque AOS elle-même, qui devrait être initialisée globalement.
+    // Si vous souhaitez des interactions JavaScript spécifiques pour la timeline
+    // (ex: ouvrir/fermer des détails au clic), vous les ajouteriez ici.
+    // Actuellement, aucune action JS spécifique n'est requise pour la timeline
+    // basée sur la structure et les styles CSS fournis.
+
+    // Vous pouvez vous assurer que AOS est rafraîchi si nécessaire, bien que pour du contenu statique
+    // chargé au début, ce ne soit généralement pas requis.
+    // if (typeof AOS !== 'undefined') {
+    //     AOS.refresh();
+    // }
+
+}); // Fin de DOMContentLoaded
+
 })();

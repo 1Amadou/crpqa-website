@@ -4,6 +4,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
+
+use App\Http\Middleware\ShareSiteSettings;
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
@@ -18,9 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
 
-    $middleware->web(append: [ // Ou $middleware->append() pour global
-        \App\Http\Middleware\ShareSiteSettings::class,
-        ]);
+    // $middleware->web(append: [ // Ou $middleware->append() pour global
+    //     \App\Http\Middleware\ShareSiteSettings::class,
+    //     ]);
+    $middleware->appendToGroup('web', ShareSiteSettings::class);
 
         // Vous pouvez ajouter d'autres configurations de middleware ici si nécessaire
         // Par exemple, pour les groupes de middleware globaux ou web :

@@ -4,16 +4,13 @@ use Illuminate\Support\Facades\Route;
 
 // Contrôleurs Publics
 use App\Http\Controllers\PublicPageController;
-use App\Http\Controllers\PublicNewsController; // <== C'est celui-là que nous allons utiliser pour les détails des news
+use App\Http\Controllers\PublicNewsController;
 use App\Http\Controllers\PublicEventController;
 use App\Http\Controllers\PublicPublicationController;
 use App\Http\Controllers\PublicResearcherController;
 use App\Http\Controllers\PublicResearchAxisController;
 use App\Http\Controllers\PublicPartnerController;
 use App\Http\Controllers\ContactController;
-use App\Http\Controllers\Admin\NewsController; // <-- AJOUTE OU VÉRIFIE CETTE LIGNE !
-// use App\Http\Controllers\PublicNewsController;
-
 
 // Contrôleurs Admin
 use App\Http\Controllers\Admin\DashboardController;
@@ -22,7 +19,7 @@ use App\Http\Controllers\Admin\StaticPageController as AdminStaticPageController
 use App\Http\Controllers\Admin\SiteSettingController;
 use App\Http\Controllers\Admin\ResearcherController as AdminResearcherController;
 use App\Http\Controllers\Admin\PublicationController as AdminPublicationController;
-use App\Http\Controllers\Admin\NewsController as AdminNewsController;
+use App\Http\Controllers\Admin\NewsController as AdminNewsController; // Utiliser cet alias pour l'admin
 use App\Http\Controllers\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Admin\PartnerController as AdminPartnerController;
 use App\Http\Controllers\Admin\ResearchAxisController as AdminResearchAxisController;
@@ -37,27 +34,24 @@ use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 Route::name('public.')->group(function () {
     // Page d'accueil
     Route::get('/', [PublicPageController::class, 'home'])->name('home');
+    
+    // Page À propos
+    Route::get('/a-propos', [PublicPageController::class, 'about'])->name('about'); // Sera nommée 'public.about'
 
-    // Page À propos (URL dédiée)
-    Route::get('/a-propos', [PublicPageController::class, 'about'])->name('about');
-
-    // Pages statiques génériques (slug) - Note: Utilise le route-model binding sur 'staticPage'
+    // Pages statiques génériques (slug)
     Route::get('/p/{staticPage:slug}', [PublicPageController::class, 'showStaticPage'])->name('page');
 
     // Actualités publiques
-    Route::get('/actualites', [PublicNewsController::class, 'index'])->name('news.index');
-    // C'est cette ligne qui sera maintenant la seule pour afficher les détails d'une actualité
-    // On utilise {news:slug} pour le route-model binding direct sur le modèle News et le champ 'slug'
-    Route::get('/actualites/{news:slug}', [PublicNewsController::class, 'show'])->name('news.show');
-    Route::put('/admin/news/{newsItem}', [NewsController::class, 'update'])->name('admin.news.update');
-
-
-
+    Route::get('/actualites', [PublicNewsController::class, 'index'])->name('news.index'); // Sera nommée 'public.news.index'
+    Route::get('/actualites/{news:slug}', [PublicNewsController::class, 'show'])->name('news.show'); // Sera nommée 'public.news.show'
+    Route::get('/actualites/{news}', [PublicNewsController::class, 'show'])->name('public.news.show');
+    Route::get('/actualites/{news:slug}', [PublicNewsController::class, 'show'])->name('news.show'); // Devrait créer 'public.news.show'
+    
     // Événements publics
     Route::get('/evenements', [PublicEventController::class, 'index'])->name('events.index');
     Route::get('/evenements/{event:slug}', [PublicEventController::class, 'show'])->name('events.show');
     Route::post('/evenements/{event:slug}/register', [PublicEventController::class, 'register'])->name('events.register');
-
+    
     // Publications publiques
     Route::get('/publications', [PublicPublicationController::class, 'index'])->name('publications.index');
     Route::get('/publications/{publication:slug}', [PublicPublicationController::class, 'show'])->name('publications.show');
@@ -85,7 +79,7 @@ Route::name('public.')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('admin')
-    ->middleware(['auth', 'permission:access admin panel'])
+    ->middleware(['auth', 'verified', 'permission:access admin panel']) // Ajout de 'verified' pour la cohérence avec les routes Breeze/Jetstream typiques
     ->name('admin.')
     ->group(function () {
         // Dashboard & Profil
@@ -94,7 +88,7 @@ Route::prefix('admin')
         Route::patch('/profile', [AdminProfileController::class, 'update'])->name('profile.update');
 
         // Utilisateurs & pages statiques
-        Route::resource('users', UserController::class)->except(['show']);
+        Route::resource('users', UserController::class);
         Route::resource('static-pages', AdminStaticPageController::class);
 
         // Paramètres du site
@@ -103,29 +97,31 @@ Route::prefix('admin')
 
         // Ressources administratives
         Route::resource('researchers', AdminResearcherController::class);
+        
         Route::resource('publications', AdminPublicationController::class);
         Route::get('/publications/{publication}/download-admin', [AdminPublicationController::class, 'downloadAdminPdf'])->name('publications.downloadAdminPdf');
+        
+        // News Management (UNE SEULE DÉFINITION CORRECTE ICI)
         Route::resource('news', AdminNewsController::class)->parameters(['news' => 'newsItem']);
+        // Les routes personnalisées pour publish/unpublish doivent être DANS LE GROUPE DE NOM 'admin.' et avec un nom simple
+        Route::get('news/{newsItem}/publish', [AdminNewsController::class, 'publish'])->name('news.publish');
+        Route::get('news/{newsItem}/unpublish', [AdminNewsController::class, 'unpublish'])->name('news.unpublish');
+
         Route::resource('events', AdminEventController::class);
         Route::prefix('events/{event}')->name('events.')->group(function () {
             Route::get('registrations', [EventRegistrationController::class, 'indexForEvent'])->name('registrations.index');
             Route::get('registrations/export-pdf', [EventRegistrationController::class, 'exportPdf'])->name('registrations.exportPdf');
             Route::get('registrations/export-excel', [EventRegistrationController::class, 'exportExcel'])->name('registrations.exportExcel');
-            Route::post('registrations/import-excel', [EventRegistrationController::class, 'importExcel'])->name('registrations.importExcel');
+            // Route::post('registrations/import-excel', [EventRegistrationController::class, 'importExcel'])->name('registrations.importExcel'); // Assurez-vous que cette méthode existe et fonctionne
         });
         Route::resource('event-registrations', EventRegistrationController::class)->except(['index','create','store']);
-        Route::post('event-registrations/bulk-actions', [EventRegistrationController::class, 'bulk-actions']);
+        // Route::post('event-registrations/bulk-actions', [EventRegistrationController::class, 'bulkActions']); // Nom avec tiret, préférez underscore: bulk_actions
+
         Route::resource('partners', AdminPartnerController::class);
         Route::resource('research-axes', AdminResearchAxisController::class);
     });
 
-    Route::resource('admin/news', NewsController::class)->names('admin.news');
-    Route::resource('news', NewsController::class);
-
-// Cette ligne est dupliquée et mal placée, elle devrait être dans le groupe admin ci-dessus
-// Route::resource('news', AdminNewsController::class)->parameters(['news' => 'newsItem']);
-
-
+// Routes d'authentification (Breeze, Jetstream, etc.)
 if (file_exists(__DIR__.'/auth.php')) {
     require __DIR__.'/auth.php';
 }
