@@ -44,13 +44,15 @@ class ResearcherController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-    {
-        $researchers = Researcher::orderBy('display_order', 'asc')
-                                ->orderBy('last_name', 'asc')
-                                ->orderBy('first_name', 'asc')
-                                ->paginate(15);
-        return view('admin.researchers.index', compact('researchers'));
-    }
+{
+    $researchers = Researcher::orderBy('display_order', 'asc')
+                             ->orderBy('last_name_fr', 'asc') // Remplace last_name
+                             ->orderBy('first_name_fr', 'asc') // Remplace first_name
+                             ->paginate(15);
+
+    return view('admin.researchers.index', compact('researchers'));
+}
+
 
     /**
      * Show the form for creating a new resource.

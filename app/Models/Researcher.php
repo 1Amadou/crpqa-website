@@ -5,11 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\BelongsTo; // Ajoutez cette ligne
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use App\Traits\HasLocalizedFields;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Researcher extends Model
+class Researcher extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, InteractsWithMedia, HasLocalizedFields;
 
     /**
      * The attributes that are mass assignable.
@@ -19,18 +23,19 @@ class Researcher extends Model
     protected $fillable = [
         'first_name',
         'last_name',
-        'title',
-        'position',
+        'title_position', // Changed from 'title' and 'position'
         'email',
-        'phone_number',
+        'phone', // Changed from 'phone_number'
         'biography',
-        'photo_path',
-        'research_areas',
+        'research_interests', // Changed from 'research_areas'
+        'website_url',
         'linkedin_url',
+        'researchgate_url',
         'google_scholar_url',
+        'orcid_id',
         'is_active',
-        'display_order',
-        'user_id', // Ajout de user_id ici
+        'user_id',
+        'slug',
     ];
 
     /**
@@ -40,9 +45,52 @@ class Researcher extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
-        'display_order' => 'integer',
-        // 'research_areas' => 'array', // Décommentez si vous stockez research_areas en JSON
     ];
+
+    /**
+     * The attributes that are localized.
+     *
+     * @var array<string>
+     */
+    protected $localizedFields = [
+        'first_name',
+        'last_name',
+        'title_position',
+        'biography',
+        'research_interests',
+    ];
+
+    /**
+     * Get the route key for the model.
+     *
+     * @return string
+     */
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
+    /**
+     * Register media collections.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('photo')
+             ->singleFile()
+             ->acceptsImage('image/jpeg', 'image/png', 'image/webp');
+    }
+
+    public function registerMediaConversions(Media $media = null): void
+    {
+        $this->addMediaConversion('thumb')
+              ->width(368)
+              ->height(232)
+              ->sharpen(10);
+
+        $this->addMediaConversion('card')
+              ->width(600)
+              ->height(400);
+    }
 
     /**
      * The publications that belong to the researcher.

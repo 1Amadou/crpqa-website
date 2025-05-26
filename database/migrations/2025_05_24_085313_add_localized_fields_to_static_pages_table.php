@@ -6,41 +6,44 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::table('static_pages', function (Blueprint $table) {
-            // Supposons 'fr' et 'en' comme locales
-            // Pour title (qui est string dans la migration originale)
-            $table->string('title_fr')->nullable()->after('title');
-            $table->string('title_en')->nullable()->after('title_fr');
+        // Schema::table('static_pages', function (Blueprint $table) {
+        //     // Supposons que la migration '2025_05_24_073353_add_localized_fields_to_static_pages_table'
+        //     // s'occupe déjà de créer 'title_fr', 'title_en', 'content_fr', 'content_en', etc.
+        //     // Si c'est le cas, cette section doit être vide ou ne pas redéclarer ces colonnes.
 
-            // Pour content (qui est longText)
-            $table->longText('content_fr')->nullable()->after('content');
-            $table->longText('content_en')->nullable()->after('content_fr');
-
-            // Pour meta_title (qui est string)
-            $table->string('meta_title_fr')->nullable()->after('meta_title');
-            $table->string('meta_title_en')->nullable()->after('meta_title_fr');
-
-            // Pour meta_description (qui est text)
-            $table->text('meta_description_fr')->nullable()->after('meta_description');
-            $table->text('meta_description_en')->nullable()->after('meta_description_fr');
-
-            // Optionnel: Rendre les colonnes de base (title, content) nullables ou les supprimer
-            // $table->string('title')->nullable()->change();
-            // $table->longText('content')->nullable()->change();
-        });
+        //     // Exemple de ce qui pourrait causer l'erreur (NE PAS FAIRE SI DÉJÀ FAIT AILLEURS):
+        //     // $table->string('title_fr')->nullable()->after('title');
+        //     // $table->string('title_en')->nullable()->after('title_fr');
+        //     // ... et ainsi de suite pour les autres champs localisés.
+        // });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::table('static_pages', function (Blueprint $table) {
-            $table->dropColumn([
-                'title_fr', 'title_en',
-                'content_fr', 'content_en',
-                'meta_title_fr', 'meta_title_en',
-                'meta_description_fr', 'meta_description_en',
-            ]);
-        });
+        // Schema::table('static_pages', function (Blueprint $table) {
+        //     // Si la méthode up() de CETTE migration ne crée plus ces colonnes,
+        //     // alors la méthode down() ne doit pas non plus essayer de les supprimer.
+        //     // La responsabilité de la suppression incombe à la migration qui les a créées.
+
+        //     // Exemple de ce qui ne devrait plus être ici si 'up()' est vide pour ces colonnes :
+        //     // $columnsToDrop = [
+        //     //     'title_fr', 'title_en', 
+        //     //     'content_fr', 'content_en', 
+        //     //     // ... autres colonnes
+        //     // ];
+        //     // foreach ($columnsToDrop as $column) {
+        //     //     if (Schema::hasColumn('static_pages', $column)) {
+        //     //         $table->dropColumn($column);
+        //     //     }
+        //     // }
+        // });
     }
 };

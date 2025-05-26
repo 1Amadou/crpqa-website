@@ -12,21 +12,29 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('researchers', function (Blueprint $table) {
-            $table->id(); // Clé primaire auto-incrémentée (BIGINT UNSIGNED)
-            $table->string('first_name'); // Prénom
-            $table->string('last_name'); // Nom de famille
-            $table->string('title')->nullable(); // Titre (Dr., Prof.), peut être vide
-            $table->string('position')->nullable(); // Poste/Fonction, peut être vide
-            $table->string('email')->unique()->nullable(); // Email, doit être unique, peut être vide
-            $table->string('phone_number')->nullable(); // Numéro de téléphone, peut être vide
-            $table->text('biography')->nullable(); // Biographie détaillée, peut être vide
-            $table->string('photo_path')->nullable(); // Chemin vers la photo, peut être vide
-            $table->text('research_areas')->nullable(); // Domaines de recherche, peut être vide
-            $table->string('linkedin_url')->nullable(); // Lien LinkedIn, peut être vide
-            $table->string('google_scholar_url')->nullable(); // Lien Google Scholar, peut être vide
-            $table->boolean('is_active')->default(true); // Profil actif/visible, vrai par défaut
-            $table->integer('display_order')->default(0)->nullable(); // Ordre d'affichage, 0 par défaut
-            $table->timestamps(); // Ajoute les colonnes created_at et updated_at
+            $table->id();
+            $table->string('slug')->unique();
+            $table->string('first_name_fr')->nullable();
+            $table->string('first_name_en')->nullable();
+            $table->string('last_name_fr')->nullable();
+            $table->string('last_name_en')->nullable();
+            $table->string('title_position_fr')->nullable();
+            $table->string('title_position_en')->nullable();
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->text('biography_fr')->nullable();
+            $table->text('biography_en')->nullable();
+            $table->text('research_interests_fr')->nullable();
+            $table->text('research_interests_en')->nullable();
+            $table->string('website_url')->nullable();
+            $table->string('linkedin_url')->nullable();
+            $table->string('researchgate_url')->nullable();
+            $table->string('google_scholar_url')->nullable();
+            $table->string('orcid_id')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('SET NULL');
+            $table->timestamps();
         });
     }
 
