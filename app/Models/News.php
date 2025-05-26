@@ -2,53 +2,49 @@
 
 namespace App\Models;
 
+use App\Traits\HasLocalizedFields;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Spatie\Translatable\HasTranslations; // <-- AJOUTE CETTE LIGNE
-use Carbon\Carbon; // Pour les mutateurs de date si besoin
-use Illuminate\Support\Facades\Storage; // Pour le stockage des fichiers
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Carbon\Carbon;
 
-class News extends Model
+class News extends Model implements HasMedia
 {
-    use HasFactory, HasTranslations; // <-- AJOUTE HasTranslations ICI
+    use HasFactory, HasLocalizedFields, InteractsWithMedia;
 
     protected $fillable = [
-        'title',
         'slug',
-        'short_content', // Ajoute ce champ pour la traduction
-        'content',       // Ajoute ce champ pour la traduction
-        'meta_title',    // Ajoute ce champ pour la traduction
-        'meta_description', // Ajoute ce champ pour la traduction
-        'summary',       // Souvent utilisé pour la méta-description ou un aperçu, donc traduisible
-        'cover_image_url', // Si tu stockes l'URL complète, sinon juste le path
-        'cover_image_alt',
         'news_category_id',
-        'user_id',
+        // 'user_id', // ANCIENNE LIGNE À CHANGER/SUPPRIMER
+        'created_by_user_id', // <--- CORRECTION ICI
         'published_at',
         'is_published',
         'is_featured',
-        'gallery_images_json', // Si tu as une galerie JSON traduisible (captions)
+
+        'title_fr', 'title_en',
+        'summary_fr', 'summary_en',
+        'content_fr', 'content_en',
+        'meta_title_fr', 'meta_title_en',
+        'meta_description_fr', 'meta_description_en',
+        'cover_image_alt_fr', 'cover_image_alt_en',
     ];
 
-    // Déclare ici tous les attributs que tu veux rendre traduisibles
-    public array $translatable = [
+    public array $localizedFields = [
         'title',
-        'short_content',
+        'summary',
         'content',
         'meta_title',
         'meta_description',
-        'summary',
-        // 'gallery_images_json', // Si tu veux traduire les captions ou alts DANS le JSON.
-                               // Si le JSON contient déjà des champs localisés comme {'fr': 'caption_fr', 'en': 'caption_en'}, alors pas besoin ici.
-                               // Si c'est un tableau simple d'objets, la logique de getLocalizedField() dans la vue est suffisante.
+        'cover_image_alt',
     ];
 
     protected $casts = [
         'published_at' => 'datetime',
         'is_published' => 'boolean',
         'is_featured' => 'boolean',
-        'gallery_images_json' => 'array', // Pour que Laravel caste ce champ en tableau automatiquement
     ];
 
     // Relations
@@ -57,33 +53,29 @@ class News extends Model
         return $this->belongsTo(NewsCategory::class, 'news_category_id');
     }
 
-    public function user(): BelongsTo
+    public function user(): BelongsTo // Représente l'auteur (created_by)
     {
-        return $this->belongsTo(User::class);
+        // Spécifier la clé étrangère correcte si elle n'est pas 'user_id'
+        return $this->belongsTo(User::class, 'created_by_user_id'); // <--- CORRECTION ICI
     }
 
-    // Accesseur pour l'URL de l'image de couverture
-    public function getCoverImageUrlAttribute(?string $value): ?string
+    // Configuration pour Spatie Media Library
+    public function registerMediaCollections(): void
     {
-        // Si tu utilises Spatie Media Library, tu devrais probablement avoir une méthode du genre
-        // return $this->getFirstMediaUrl('news_covers');
-
-        // Si tu gères les chemins manuellement avec Storage::disk('public')
-        if ($this->cover_image_path) {
-            return Storage::url($this->cover_image_path);
-        }
-        return $value; // Retourne la valeur existante si elle est déjà une URL complète
+        $this->addMediaCollection('news_cover_image') // Nom de la collection
+            ->singleFile() // Une seule image de couverture par actualité
+            ->useFallbackUrl(asset('images/default_news_placeholder.jpg'))
+            ->useFallbackPath(public_path('images/default_news_placeholder.jpg'));
     }
 
-    // Méthode helper pour récupérer les champs traduits
-    public function getLocalizedField(string $fieldName)
+    // Optionnel : Définir des conversions d'images (thumbnails, etc.)
+    public function registerMediaConversions(Media $media = null): void
     {
-        // Vérifie si l'attribut est traduisible avant d'appeler getTranslation()
-        if (in_array($fieldName, $this->translatable)) {
-            return $this->getTranslation($fieldName, app()->getLocale());
-        }
-        // Sinon, retourne simplement l'attribut comme d'habitude
-        return $this->$fieldName;
+        $this->addMediaConversion('thumbnail')
+              ->width(400)
+              ->height(250) // Ajustez les dimensions selon vos besoins
+              ->sharpen(10)
+              ->nonQueued(); // ou ->queued() si vous utilisez une file d'attente pour les conversions
     }
 
     public function getRouteKeyName()
@@ -91,6 +83,6 @@ class News extends Model
         return 'slug';
     }
 
-    // Assure-toi que la méthode 'isFuture()' est disponible si tu l'utilises,
-    // elle est normalement déjà sur les objets Carbon.
+    // Retiré : getCoverImageUrlAttribute (géré par getFirstMediaUrl de Spatie)
+    // Retiré : getLocalizedField (géré par le trait HasLocalizedFields)
 }

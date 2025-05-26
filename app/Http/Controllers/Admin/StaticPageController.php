@@ -6,113 +6,203 @@ use App\Http\Controllers\Controller;
 use App\Models\StaticPage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str; // Pour Str::slug
+use Illuminate\Validation\Rule; // Pour Rule::unique
 
 class StaticPageController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    protected array $availableLocales;
+
+    public function __construct()
+    {
+        // Permissions via Route::resource et middleware de groupe
+        $this->availableLocales = config('app.available_locales', ['fr', 'en']);
+    }
+
     public function index()
     {
-        $pages = StaticPage::orderBy('title')->paginate(10); // Récupère toutes les pages, paginées
+        // Tri par le titre dans la première langue disponible pour la cohérence
+        $sortLocale = $this->availableLocales[0] ?? 'fr';
+        $pages = StaticPage::orderBy('title_' . $sortLocale)->paginate(15);
         return view('admin.static_pages.index', compact('pages'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        // Simplement afficher la vue du formulaire de création
-        return view('admin.static_pages.create');
+        $availableLocales = $this->availableLocales;
+        return view('admin.static_pages.create', compact('availableLocales'));
     }
 
-    /**
- * Store a newly created resource in storage.
- */
-public function store(Request $request)
-{
-    $validatedData = $request->validate([
-        'title' => 'required|string|max:255',
-        'slug' => 'required|string|max:255|alpha_dash|unique:static_pages,slug', // alpha_dash autorise lettres, chiffres, tirets, underscores
-        'content' => 'required|string',
-        'meta_title' => 'nullable|string|max:255',
-        'meta_description' => 'nullable|string|max:600',
-        'is_published' => 'nullable|boolean', // La case à cocher enverra '1' ou ne sera pas envoyée
-    ]);
+    public function store(Request $request)
+    {
+        $rules = [
+            'slug' => 'nullable|string|max:255|alpha_dash|unique:static_pages,slug',
+            'is_published' => 'nullable|boolean',
+            'cover_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048', // Pour Spatie Media Library
+        ];
 
-    $staticPage = new StaticPage();
-    $staticPage->title = $validatedData['title'];
-    $staticPage->slug = $validatedData['slug']; // Pour l'instant, nous utilisons le slug fourni par l'utilisateur.
-                                              // On pourrait aussi le générer automatiquement à partir du titre.
-    $staticPage->content = $validatedData['content'];
-    $staticPage->meta_title = $validatedData['meta_title'] ?? $validatedData['title']; // Méta titre par défaut si vide
-    $staticPage->meta_description = $validatedData['meta_description'];
-    $staticPage->is_published = $request->boolean('is_published'); // Convertit la valeur de la case à cocher en booléen
-    $staticPage->user_id = Auth::id(); // ID de l'utilisateur admin connecté
+        $localizedDataToSave = [];
 
-    $staticPage->save();
+        foreach ($this->availableLocales as $locale) {
+            $rules['title_' . $locale] = ($locale == $this->availableLocales[0] ? 'required' : 'nullable') . '|string|max:255';
+            $rules['content_' . $locale] = ($locale == $this->availableLocales[0] ? 'required' : 'nullable') . '|string';
+            $rules['meta_title_' . $locale] = 'nullable|string|max:255';
+            $rules['meta_description_' . $locale] = 'nullable|string|max:600';
 
-    // Redirection vers la liste des pages avec un message de succès
-    return redirect()->route('admin.static-pages.index')
-                     ->with('success', 'La page statique "' . $staticPage->title . '" a été créée avec succès !');
-}
+            if ($request->has('title_' . $locale)) {
+                $localizedDataToSave['title_' . $locale] = $request->input('title_' . $locale);
+            }
+            if ($request->has('content_' . $locale)) {
+                $localizedDataToSave['content_' . $locale] = $request->input('content_' . $locale);
+            }
+            if ($request->has('meta_title_' . $locale)) {
+                $localizedDataToSave['meta_title_' . $locale] = $request->input('meta_title_' . $locale);
+            }
+            if ($request->has('meta_description_' . $locale)) {
+                $localizedDataToSave['meta_description_' . $locale] = $request->input('meta_description_' . $locale);
+            }
+        }
 
-    /**
-     * Display the specified resource.
-     */
+        $validatedData = $request->validate($rules);
+
+        $staticPage = new StaticPage();
+
+        // Assigner les champs traduits
+        foreach ($this->availableLocales as $locale) {
+            if (isset($validatedData['title_' . $locale])) {
+                $staticPage->{'title_' . $locale} = $validatedData['title_' . $locale];
+            }
+            if (isset($validatedData['content_' . $locale])) {
+                $staticPage->{'content_' . $locale} = $validatedData['content_' . $locale];
+            }
+            if (isset($validatedData['meta_title_' . $locale])) {
+                $staticPage->{'meta_title_' . $locale} = $validatedData['meta_title_' . $locale] ?: $validatedData['title_' . $locale];
+            }
+            if (isset($validatedData['meta_description_' . $locale])) {
+                $staticPage->{'meta_description_' . $locale} = $validatedData['meta_description_' . $locale];
+            }
+        }
+
+        // Slug: générer à partir du titre de la langue principale si non fourni ou vide
+        $slugInput = $request->input('slug');
+        if (empty($slugInput)) {
+            $titleForSlug = $validatedData['title_' . $this->availableLocales[0]] ?? 'untitled-page-' . time();
+            $staticPage->slug = Str::slug($titleForSlug);
+            // Vérifier l'unicité si généré automatiquement
+            $originalSlug = $staticPage->slug;
+            $counter = 1;
+            while (StaticPage::where('slug', $staticPage->slug)->exists()) {
+                $staticPage->slug = $originalSlug . '-' . $counter++;
+            }
+        } else {
+            $staticPage->slug = $slugInput;
+        }
+
+        $staticPage->is_published = $request->boolean('is_published');
+        $staticPage->user_id = Auth::id();
+        $staticPage->save(); // Sauvegarder pour obtenir un ID avant d'ajouter des médias
+
+        if ($request->hasFile('cover_image')) {
+            $staticPage->addMediaFromRequest('cover_image')->toMediaCollection('static_page_cover_image');
+        }
+
+        $displayTitle = $staticPage->getTranslation('title', $this->availableLocales[0]) ?: $staticPage->slug;
+        return redirect()->route('admin.static-pages.index')
+                         ->with('success', "La page statique \"{$displayTitle}\" a été créée avec succès !");
+    }
+
     public function show(StaticPage $staticPage)
     {
-        return view('admin.static_pages.show', compact('staticPage')); 
+        // Passer les locales pour que la vue show puisse afficher le contenu traduit
+        $availableLocales = $this->availableLocales;
+        return view('admin.static_pages.show', compact('staticPage', 'availableLocales'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(StaticPage $staticPage) // Laravel injecte automatiquement l'instance de StaticPage basée sur l'ID dans l'URL
+    public function edit(StaticPage $staticPage)
     {
-        return view('admin.static_pages.edit', compact('staticPage')); // Passe la page à la vue
+        $availableLocales = $this->availableLocales;
+        return view('admin.static_pages.edit', compact('staticPage', 'availableLocales'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, StaticPage $staticPage) // L'instance de la page est injectée
+    public function update(Request $request, StaticPage $staticPage)
     {
-        $validatedData = $request->validate([
-            'title' => 'required|string|max:255',
-            // Pour le slug, il doit être unique SAUF pour l'enregistrement actuel.
-            'slug' => 'required|string|max:255|alpha_dash|unique:static_pages,slug,' . $staticPage->id,
-            'content' => 'required|string',
-            'meta_title' => 'nullable|string|max:255',
-            'meta_description' => 'nullable|string|max:600',
+        $rules = [
+            'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', Rule::unique('static_pages')->ignore($staticPage->id)],
             'is_published' => 'nullable|boolean',
-        ]);
+            'cover_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ];
 
-        $staticPage->title = $validatedData['title'];
-        $staticPage->slug = $validatedData['slug'];
-        $staticPage->content = $validatedData['content'];
-        $staticPage->meta_title = $validatedData['meta_title'] ?? $validatedData['title'];
-        $staticPage->meta_description = $validatedData['meta_description'];
+        $localizedDataToSave = [];
+
+        foreach ($this->availableLocales as $locale) {
+            $rules['title_' . $locale] = ($locale == $this->availableLocales[0] ? 'required' : 'nullable') . '|string|max:255';
+            $rules['content_' . $locale] = ($locale == $this->availableLocales[0] ? 'required' : 'nullable') . '|string';
+            $rules['meta_title_' . $locale] = 'nullable|string|max:255';
+            $rules['meta_description_' . $locale] = 'nullable|string|max:600';
+        }
+
+        $validatedData = $request->validate($rules);
+
+        foreach ($this->availableLocales as $locale) {
+             if (isset($validatedData['title_' . $locale])) {
+                $staticPage->{'title_' . $locale} = $validatedData['title_' . $locale];
+            }
+            if (isset($validatedData['content_' . $locale])) {
+                $staticPage->{'content_' . $locale} = $validatedData['content_' . $locale];
+            }
+            if (isset($validatedData['meta_title_' . $locale])) {
+                $staticPage->{'meta_title_' . $locale} = $validatedData['meta_title_' . $locale] ?: $validatedData['title_' . $locale];
+            }
+            if (isset($validatedData['meta_description_' . $locale])) {
+                $staticPage->{'meta_description_' . $locale} = $validatedData['meta_description_' . $locale];
+            }
+        }
+
+        $slugInput = $request->input('slug');
+        if (empty($slugInput)) {
+            if ($staticPage->isDirty('title_' . $this->availableLocales[0])) { // Si le titre principal a changé
+                $titleForSlug = $validatedData['title_' . $this->availableLocales[0]] ?? 'untitled-page-' . time();
+                $newSlug = Str::slug($titleForSlug);
+                 // Vérifier l'unicité si généré automatiquement et différent de l'ancien
+                if ($newSlug !== $staticPage->slug) {
+                    $originalSlug = $newSlug;
+                    $counter = 1;
+                    while (StaticPage::where('slug', $newSlug)->where('id', '!=', $staticPage->id)->exists()) {
+                        $newSlug = $originalSlug . '-' . $counter++;
+                    }
+                    $staticPage->slug = $newSlug;
+                }
+            }
+        } else {
+            $staticPage->slug = $slugInput;
+        }
+
         $staticPage->is_published = $request->boolean('is_published');
-        $staticPage->user_id = Auth::id(); // Met à jour avec l'ID de l'utilisateur qui a fait la modification
+        $staticPage->user_id = Auth::id();
+
+        if ($request->hasFile('cover_image')) {
+            $staticPage->clearMediaCollection('static_page_cover_image'); // Supprime l'ancienne image
+            $staticPage->addMediaFromRequest('cover_image')->toMediaCollection('static_page_cover_image');
+        } elseif ($request->boolean('remove_cover_image')) {
+            $staticPage->clearMediaCollection('static_page_cover_image');
+        }
 
         $staticPage->save();
+        $displayTitle = $staticPage->getTranslation('title', $this->availableLocales[0]) ?: $staticPage->slug;
 
         return redirect()->route('admin.static-pages.index')
-                        ->with('success', 'La page statique "' . $staticPage->title . '" a été mise à jour avec succès !');
+                         ->with('success', "La page statique \"{$displayTitle}\" a été mise à jour avec succès !");
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(StaticPage $staticPage) // Laravel injecte l'instance de la page à supprimer
+    public function destroy(StaticPage $staticPage)
     {
-        $pageTitle = $staticPage->title; // Garder le titre pour le message de succès
-
-        $staticPage->delete(); // Supprime la page de la base de données
+        $displayTitle = $staticPage->getTranslation('title', $this->availableLocales[0]) ?: $staticPage->slug;
+        
+        // Supprimer les médias associés avant de supprimer la page
+        $staticPage->clearMediaCollection('static_page_cover_image');
+        $staticPage->delete();
 
         return redirect()->route('admin.static-pages.index')
-                        ->with('success', 'La page statique "' . $pageTitle . '" a été supprimée avec succès !');
+                         ->with('success', "La page statique \"{$displayTitle}\" a été supprimée avec succès !");
     }
 }

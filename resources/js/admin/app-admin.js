@@ -205,3 +205,178 @@ document.addEventListener('DOMContentLoaded', function () {
 
     console.log('Admin scripts initialization complete.');
 });
+
+// Fonction pour initialiser les onglets horizontaux (pour les langues)
+function initHorizontalTabs(containerSelector, tabButtonSelector, tabContentSelector) {
+    const container = document.querySelector(containerSelector);
+    if (!container) {
+        // console.log('Tab container not found:', containerSelector);
+        return;
+    }
+
+    const tabs = container.querySelectorAll(tabButtonSelector);
+    const tabContents = [];
+    tabs.forEach(tab => {
+        const content = document.querySelector(tab.dataset.tabsTarget);
+        if (content) tabContents.push(content);
+    });
+
+    if (tabs.length === 0) {
+        // console.log('No tabs found in container:', containerSelector);
+        return;
+    }
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function (event) {
+            event.preventDefault();
+            tabs.forEach(t => {
+                t.classList.remove('border-primary-500', 'text-primary-600', 'dark:text-primary-500', 'dark:border-primary-500', 'active');
+                t.classList.add('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'dark:hover:text-gray-300');
+                t.setAttribute('aria-selected', 'false');
+            });
+            tabContents.forEach(c => {
+                if(c) c.classList.add('hidden');
+            });
+
+            this.classList.add('border-primary-500', 'text-primary-600', 'dark:text-primary-500', 'dark:border-primary-500', 'active');
+            this.classList.remove('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'dark:hover:text-gray-300');
+            this.setAttribute('aria-selected', 'true');
+
+            const target = document.querySelector(this.dataset.tabsTarget);
+            if (target) {
+                target.classList.remove('hidden');
+            }
+        });
+    });
+
+    // Activer le premier onglet par défaut pour cet ensemble
+    if (tabs.length > 0) {
+        tabs[0].click();
+    }
+}
+
+// Fonction pour initialiser les onglets verticaux
+function initVerticalTabs(navSelector, tabLinkSelector, tabPaneSelector) {
+    const nav = document.querySelector(navSelector);
+    if (!nav) {
+        // console.log('Vertical tab navigation not found:', navSelector);
+        return;
+    }
+
+    const verticalTabs = nav.querySelectorAll(tabLinkSelector);
+    const verticalTabPanes = document.querySelectorAll(tabPaneSelector);
+
+    if (verticalTabs.length === 0) {
+        // console.log('No vertical tabs found in nav:', navSelector);
+        return;
+    }
+
+    function activateVerticalTab(tabLink) {
+        const targetId = tabLink.dataset.verticalTabTarget;
+
+        verticalTabs.forEach(t => {
+            t.classList.remove('active-vertical-tab');
+            t.setAttribute('aria-selected', 'false');
+        });
+        tabLink.classList.add('active-vertical-tab'); // Le style pour active-vertical-tab est dans settings/edit.blade.php @push('styles')
+        tabLink.setAttribute('aria-selected', 'true');
+
+        verticalTabPanes.forEach(pane => {
+            if (pane.id === targetId) {
+                pane.classList.remove('hidden');
+                // Initialiser les onglets de langue à l'intérieur du panneau vertical qui vient d'être activé
+                initHorizontalTabs(`#languageTabContent-${targetId}`, `#languageTabs-${targetId} button`, `#languageTabContent-${targetId} > div`);
+            } else {
+                pane.classList.add('hidden');
+            }
+        });
+        localStorage.setItem('activeVerticalSettingsTab', targetId);
+    }
+
+    verticalTabs.forEach(tabLink => {
+        tabLink.addEventListener('click', function (event) {
+            event.preventDefault();
+            activateVerticalTab(this);
+        });
+    });
+
+    const activeVerticalTabId = localStorage.getItem('activeVerticalSettingsTab');
+    let activated = false;
+    if (activeVerticalTabId) {
+        const activeTabLink = nav.querySelector(`[data-vertical-tab-target="${activeVerticalTabId}"]`);
+        if (activeTabLink) {
+            activateVerticalTab(activeTabLink);
+            activated = true;
+        }
+    }
+    if (!activated && verticalTabs.length > 0) {
+        activateVerticalTab(verticalTabs[0]); // Activer le premier par défaut
+    }
+}
+
+
+// Initialisation de TinyMCE
+function initTinyMCE() {
+    if (typeof tinymce !== 'undefined') {
+        tinymce.init({
+            selector: 'textarea.wysiwyg', // Cible toutes les textareas avec la classe 'wysiwyg'
+            plugins: 'preview importcss searchreplace autolink autosave save directionality code visualblocks visualchars fullscreen image link media codesample table charmap pagebreak nonbreaking anchor table advlist lists wordcount help charmap quickbars emoticons accordion',
+            menubar: 'file edit view insert format tools table help',
+            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | align numlist bullist | link image media table | accordion accordionremove | charmap emoticons | code fullscreen preview | save print | pagebreak anchor codesample | ltr rtl',
+            height: 400,
+            autosave_ask_before_unload: true,
+            autosave_interval: '30s',
+            autosave_prefix: '{path}{query}-{id}-',
+            autosave_restore_when_empty: false,
+            autosave_retention: '2m',
+            image_advtab: true,
+            // Vous pouvez ajouter des configurations de file_picker_callback ici si nécessaire
+            // comme nous l'avions dans les @push('scripts')
+            // Assurez-vous que les chemins vers les assets de TinyMCE sont corrects
+            // (ils sont généralement gérés par le chargement de tinymce.min.js lui-même si la structure des dossiers est standard)
+            language_url: document.head.querySelector('meta[name="tinymce-lang-url"]').content, // '/assets/tinymce/langs/fr_FR.js'
+            language: document.documentElement.lang.replace('-', '_'), // ex: 'fr_FR'
+            skin_url: document.head.querySelector('meta[name="tinymce-skin-url"]').content, // '/assets/tinymce/skins/ui/oxide'
+            content_css_dark: document.head.querySelector('meta[name="tinymce-content-css-dark"]').content, // '/assets/tinymce/skins/content/dark/content.css'
+            content_css_default: document.head.querySelector('meta[name="tinymce-content-css-default"]').content, // '/assets/tinymce/skins/content/default/content.css'
+
+            // Détection du mode sombre pour le skin de l'éditeur
+            skin: (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'oxide-dark' : 'oxide'),
+            content_css: (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default')
+
+        });
+    } else {
+        console.warn('TinyMCE n\'est pas chargé. Assurez-vous que le script principal de TinyMCE est inclus avant app-admin.js ou que Vite le gère correctement.');
+    }
+}
+
+// Appel des fonctions d'initialisation sur DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('Admin scripts initializing (app-admin.js)...');
+
+    // Dans resources/js/admin/app-admin.js, à l'intérieur de DOMContentLoaded
+    initHorizontalTabs('#languageTabContentNewsShow', '#languageTabsNewsShow button', '#languageTabContentNewsShow > div');
+
+    // Initialisation pour la page des paramètres du site (avec onglets verticaux et horizontaux imbriqués)
+    initVerticalTabs('#adminSettingsVerticalTabsNav', '#adminSettingsVerticalTabsNav a.vertical-tab-item', '#adminSettingsVerticalTabContentContainer > div.vertical-tab-pane');
+    // Note: initHorizontalTabs est appelé DANS activateVerticalTab pour les onglets de settings.
+
+    // Initialisation pour les formulaires de pages statiques (uniquement onglets horizontaux)
+    initHorizontalTabs('#languageTabContentStaticPage', '#languageTabsStaticPage button', '#languageTabContentStaticPage > div');
+
+    // Initialisation pour les formulaires de News (si vous utilisez la même structure d'onglets)
+    initHorizontalTabs('#languageTabContentNews', '#languageTabsNews button', '#languageTabContentNews > div');
+    
+    // Initialisation pour les formulaires de Events (si vous utilisez la même structure d'onglets)
+    initHorizontalTabs('#languageTabContentEvents', '#languageTabsEvents button', '#languageTabContentEvents > div');
+
+    // ... Ajoutez d'autres initialisations d'onglets pour d'autres modules si nécessaire ...
+    // Par exemple pour les chercheurs, publications, etc., si leurs formulaires ont des onglets de langue.
+    // initHorizontalTabs('#languageTabContentResearchers', '#languageTabsResearchers button', '#languageTabContentResearchers > div');
+
+
+    // Initialiser TinyMCE
+    initTinyMCE();
+    
+    console.log('Admin scripts initialization complete.');
+});

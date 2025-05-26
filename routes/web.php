@@ -93,7 +93,7 @@ Route::prefix('admin')
 
         // Paramètres du site
         Route::get('/settings', [SiteSettingController::class, 'edit'])->name('settings.edit');
-        Route::post('/settings', [SiteSettingController::class, 'update'])->name('settings.update');
+        Route::put('/settings', [SiteSettingController::class, 'update'])->name('settings.update');
 
         // Ressources administratives
         Route::resource('researchers', AdminResearcherController::class);

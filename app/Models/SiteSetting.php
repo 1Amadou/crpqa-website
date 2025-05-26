@@ -2,57 +2,39 @@
 
 namespace App\Models;
 
+use App\Traits\HasLocalizedFields;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class SiteSetting extends Model
+class SiteSetting extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, HasLocalizedFields, InteractsWithMedia;
 
-    /**
-     * Indique si les IDs sont auto-incrémentés.
-     * La table site_settings n'a qu'une seule ligne, donc l'ID est généralement fixe (ex: 1).
-     *
-     * @var bool
-     */
-    public $incrementing = false;
-
-    /**
-     * Le type de la clé primaire.
-     *
-     * @var string
-     */
-    protected $keyType = 'string'; // Ou 'integer' si vous utilisez un ID numérique fixe.
-
-    /**
-     * Indique si le modèle doit être horodaté.
-     *
-     * @var bool
-     */
-    // public $timestamps = true; // Déjà géré par défaut, mais peut être explicite.
-
-    /**
-     * Les attributs qui sont assignables en masse.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-        'site_name',
-        'logo_path',
-        'favicon_path',
+        'site_name_fr', 'site_name_en',
+        'seo_meta_title_fr', 'seo_meta_title_en',
+        'seo_meta_description_fr', 'seo_meta_description_en',
+        'hero_title_fr', 'hero_title_en',
+        'hero_subtitle_fr', 'hero_subtitle_en',
+        'address_fr', 'address_en',
+        'footer_text_fr', 'footer_text_en',
+        'cookie_consent_message_fr', 'cookie_consent_message_en',
+        'maintenance_message_fr', 'maintenance_message_en',
+
         'contact_email',
         'contact_phone',
-        'address',
-        'maps_url', // Attention à la casse, dans la migration c'était Maps_url, ici aussi pour la cohérence
+        'maps_url',
+
+        // Colonnes individuelles pour les réseaux sociaux (selon votre migration initiale)
         'facebook_url',
         'twitter_url',
         'linkedin_url',
         'youtube_url',
-        'footer_text',
+        // 'instagram_url', // Ajoutez si vous avez une colonne pour Instagram
 
-        // Nouveaux champs ajoutés
         'cookie_consent_enabled',
-        'cookie_consent_message',
         'cookie_policy_url',
         'privacy_policy_url',
         'terms_of_service_url',
@@ -60,32 +42,67 @@ class SiteSetting extends Model
         'default_sender_name',
         'google_analytics_id',
         'maintenance_mode',
+    ];
+
+    public array $localizedFields = [
+        'site_name',
+        'seo_meta_title',
+        'seo_meta_description',
+        'hero_title',
+        'hero_subtitle',
+        'address',
+        'footer_text',
+        'cookie_consent_message',
         'maintenance_message',
     ];
 
-    /**
-     * Les attributs qui doivent être convertis en types natifs.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
+        // 'social_media_links' => 'array', // SUPPRIMER CETTE LIGNE
         'cookie_consent_enabled' => 'boolean',
         'maintenance_mode' => 'boolean',
     ];
 
-    /**
-     * Définir une valeur par défaut pour la clé primaire si elle n'est pas auto-incrémentée
-     * et si vous voulez forcer une certaine valeur pour la seule ligne.
-     * Ceci est optionnel et dépend de comment vous gérez la ligne unique.
-     *
-     * protected static function boot()
-     * {
-     * parent::boot();
-     * static::creating(function ($model) {
-     * if (empty($model->{$model->getKeyName()})) {
-     * $model->{$model->getKeyName()} = 'global_settings'; // Ou 1 si c'est un entier
-     * }
-     * });
-     * }
-     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('favicon')
+            ->singleFile()
+            ->useFallbackUrl(asset('images/default_favicon.ico'))
+            ->useFallbackPath(public_path('images/default_favicon.ico'));
+
+        $this->addMediaCollection('logo')
+            ->singleFile()
+            ->useFallbackUrl(asset('images/default_logo.png'))
+            ->useFallbackPath(public_path('images/default_logo.png'));
+
+        $this->addMediaCollection('logo_dark')
+            ->singleFile()
+            ->useFallbackUrl(asset('images/default_logo_dark.png'))
+            ->useFallbackPath(public_path('images/default_logo_dark.png'));
+
+        $this->addMediaCollection('hero_background')
+            ->singleFile()
+            ->useFallbackUrl(asset('images/default_hero_bg.jpg'))
+            ->useFallbackPath(public_path('images/default_hero_bg.jpg'));
+    }
+
+    // Accesseurs pour les URL des médias
+    public function getLogoUrlAttribute(): string
+    {
+        return $this->getFirstMediaUrl('logo') ?: asset('images/default_logo.png');
+    }
+
+    public function getLogoDarkUrlAttribute(): string
+    {
+        return $this->getFirstMediaUrl('logo_dark') ?: ($this->getFirstMediaUrl('logo') ?: asset('images/default_logo_dark.png'));
+    }
+
+    public function getFaviconUrlAttribute(): string
+    {
+        return $this->getFirstMediaUrl('favicon') ?: asset('images/default_favicon.ico');
+    }
+
+    public function getHeroBackgroundUrlAttribute(): string
+    {
+        return $this->getFirstMediaUrl('hero_background') ?: asset('images/default_hero_bg.jpg');
+    }
 }
