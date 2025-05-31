@@ -2,98 +2,106 @@
 
 namespace Database\Factories;
 
-use App\Models\News;
+use App\Models\News; // Utiliser le modèle News consolidé
+use App\Models\NewsCategory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class NewsFactory extends Factory
 {
-    /**
-     * The name of the factory's corresponding model.
-     *
-     * @var string
-     */
-    protected $model = News::class;
+    protected $model = News::class; // Utiliser le modèle News consolidé
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
-        $title = fake()->unique()->realText(70); // Titre plus réaliste
-        $contentParagraphs = fake()->paragraphs(fake()->numberBetween(5, 15));
-        $content = "";
-        foreach ($contentParagraphs as $para) {
-            $content .= "<p>{$para}</p>";
+        $availableLocales = config('app.available_locales', ['fr', 'en']);
+        $primaryLocale = config('app.locale', 'fr');
+
+        $localizedData = [];
+        $baseTitleForSlug = '';
+
+        foreach ($availableLocales as $locale) {
+            $title = fake()->unique()->sentence(mt_rand(5, 10)) . ' (' . strtoupper($locale) . ')';
+            if ($locale === $primaryLocale) {
+                $baseTitleForSlug = $title;
+            }
+            $localizedData['title_' . $locale] = $title;
+            $localizedData['summary_' . $locale] = fake()->paragraph(mt_rand(2, 4));
+            $localizedData['content_' . $locale] = '<p>' . implode('</p><p>', fake()->paragraphs(mt_rand(5, 10))) . '</p>';
+            $localizedData['meta_title_' . $locale] = Str::limit($title, 60);
+            $localizedData['meta_description_' . $locale] = Str::limit(strip_tags($localizedData['summary_' . $locale]), 160);
+            $localizedData['cover_image_alt_' . $locale] = __('Image de couverture pour') . ' ' . $title;
         }
 
-        $summary = Str::limit(strip_tags($content), 150);
-        $published = fake()->boolean(80); // 80% de chance d'être publié
-
-        $authorId = null;
-    $author = User::whereHas('roles', function ($query) {
-        $query->whereIn('name', ['Super Administrateur', 'Administrateur', 'Éditeur']);
-    })->inRandomOrder()->first();
-
-    if ($author) {
-        $authorId = $author->id;
-    } else {
-        // Si aucun admin/éditeur n'est trouvé, créer un utilisateur simple avec un rôle par défaut ou prendre le premier utilisateur
-        $user = User::first(); // Prend le premier utilisateur (souvent le Super Admin)
-        if (!$user) { // Si absolument aucun utilisateur n'existe (ne devrait pas arriver après UserSeeder)
-            $user = User::factory()->create(); // Crée un nouvel utilisateur
-            // Optionnel: assigner un rôle par défaut si nécessaire pour la logique de l'application
-            // $user->assignRole('Éditeur'); // Assurez-vous que ce rôle existe
+        if (empty($baseTitleForSlug) && !empty($localizedData['title_' . $primaryLocale])) {
+            $baseTitleForSlug = $localizedData['title_' . $primaryLocale];
+        } elseif (empty($baseTitleForSlug) && !empty($localizedData)) {
+            // Fallback si la locale primaire n'a pas généré de titre (improbable mais sécurisant)
+            $firstTitleKey = key(array_filter($localizedData, fn($key) => strpos($key, 'title_') === 0, ARRAY_FILTER_USE_KEY));
+            $baseTitleForSlug = $localizedData[$firstTitleKey] ?? 'actualite-generique';
         }
-        $authorId = $user->id;
-    }
+        
+        $userIds = User::pluck('id');
+        $categoryIds = NewsCategory::pluck('id');
 
-        return [
-            'title' => $title,
-            'slug' => Str::slug($title),
-            'summary' => '<p>' . fake()->realText(150) . '</p>', // Résumé HTML simple
-            'content' => $content,
-            // 'cover_image_path' => 'https://placehold.co/800x450/EBF4FF/7F9CF5?text=' . urlencode(Str::words($title, 4, '')),
-            'cover_image_path' => null, // Laisser null, ajout via l'admin
-            'published_at' => $published ? fake()->dateTimeThisYear() : null,
-            'is_featured' => fake()->boolean(25), // 25% de chance d'être en vedette
-            'meta_title' => Str::limit($title, 60),
-            'meta_description' => Str::limit(strip_tags($summary), 155),
-            // Essayer de trouver un utilisateur admin ou éditeur pour created_by_user_id
-            'created_by_user_id' => User::whereHas('roles', function ($query) {
-                                        $query->whereIn('name', ['Super Administrateur', 'Administrateur', 'Éditeur']);
-                                    })->inRandomOrder()->first()?->id ?? User::factory(), // Crée un user si aucun admin/éditeur trouvé
-        ];
+        $publishedAt = fake()->optional(0.85)->dateTimeThisYear(); // 85% de chance d'être publié cette année
+
+        return array_merge(
+            $localizedData,
+            [
+                'slug' => Str::slug($baseTitleForSlug),
+                'news_category_id' => $categoryIds->isNotEmpty() ? fake()->optional(0.9)->randomElement($categoryIds) : null,
+                'created_by_user_id' => $userIds->isNotEmpty() ? $userIds->random() : User::factory()->create()->id, // Crée un utilisateur si aucun n'existe
+                'published_at' => $publishedAt,
+                'is_published' => !is_null($publishedAt) && $publishedAt <= now(), // Publié si la date est passée ou aujourd'hui
+                'is_featured' => fake()->boolean(20), // 20% de chance d'être en vedette
+            ]
+        );
     }
 
     /**
-     * Indicate that the news item is published.
-     *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     * Configurer la factory après la création d'une instance.
      */
-    public function published(): Factory
+    public function configure(): static
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'published_at' => fake()->dateTimeThisYear(),
-            ];
-        });
-    }
+        return $this->afterCreating(function (News $newsItem) {
+            // Assurer l'unicité du slug après la création au cas où
+            $slug = $newsItem->slug;
+            $originalSlug = $slug;
+            $count = 1;
+            while (News::where('slug', $slug)->where('id', '!=', $newsItem->id)->exists()) {
+                $slug = $originalSlug . '-' . $count++;
+            }
+            if ($slug !== $newsItem->slug) {
+                $newsItem->slug = $slug;
+                $newsItem->saveQuietly();
+            }
 
-    /**
-     * Indicate that the news item is featured.
-     *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory
-     */
-    public function featured(): Factory
-    {
-        return $this->state(function (array $attributes) {
-            return [
-                'is_featured' => true,
-            ];
+            // Optionnel : Ajouter une image de couverture par défaut via Spatie Media Library
+            // Cela nécessite d'avoir une image placeholder dans votre storage/app/public/seeders/news_covers
+            // et d'avoir fait `php artisan storage:link`
+            /*
+            if (app()->environment() !== 'testing' && !$newsItem->hasMedia('news_cover_image')) {
+                $placeholderDir = storage_path('app/public/seeders/news_covers');
+                if (!is_dir($placeholderDir)) {
+                    \Illuminate\Support\Facades\File::makeDirectory($placeholderDir, 0755, true);
+                }
+                // Créez quelques images placeholder (ex: placeholder1.jpg, placeholder2.jpg) dans ce dossier
+                $placeholderImages = \Illuminate\Support\Facades\File::glob($placeholderDir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
+                if (!empty($placeholderImages)) {
+                    $randomImage = $placeholderImages[array_rand($placeholderImages)];
+                    try {
+                        $newsItem->addMedia($randomImage)
+                                 ->preservingOriginal()
+                                 ->toMediaCollection('news_cover_image');
+                    } catch (\Exception $e) {
+                        // Gérer l'erreur si l'image ne peut être ajoutée
+                        // Log::error("Failed to add media to News item ID {$newsItem->id}: " . $e->getMessage());
+                    }
+                }
+            }
+            */
         });
     }
 }

@@ -2,41 +2,36 @@
 
 @section('title', __('Créer une Nouvelle Actualité'))
 
-@section('content')
-<div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-semibold text-gray-800 dark:text-white">
+@section('header')
+    <div class="flex flex-wrap justify-between items-center gap-2">
+        <h1 class="text-2xl font-semibold text-gray-800 dark:text-white leading-tight">
             {{ __('Créer une Nouvelle Actualité') }}
         </h1>
-        <a href="{{ route('admin.news.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg text-sm transition duration-300 ease-in-out">
-            {{ __('Retour à la Liste des Actualités') }}
+        <a href="{{ route('admin.news.index') }}" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm font-medium shadow-sm transition ease-in-out duration-150 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+            </svg>
+            {{ __('Retour à la Liste') }}
         </a>
     </div>
+@endsection
 
-    @if ($errors->any())
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <strong class="font-bold">{{ __('Oups! Il y a eu des erreurs avec votre soumission.') }}</strong>
-            <ul class="list-disc pl-5 mt-2">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+@section('content')
+<div class="bg-white dark:bg-gray-800 shadow-xl sm:rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
         <form action="{{ route('admin.news.store') }}" method="POST" enctype="multipart/form-data">
-            {{-- Le formulaire partiel s'attend à $newsItem, $availableLocales, et $categories --}}
-            {{-- $newsItem est initialisé dans NewsController@create --}}
-            {{-- $availableLocales et $categories sont passés par NewsController@create --}}
+            @csrf
             @include('admin.news._form', [
-                'newsItem' => $newsItem,
+                'newsItem' => $newsItem, 
                 'availableLocales' => $availableLocales,
                 'categories' => $categories
             ])
 
             <div class="flex items-center justify-end mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                <a href="{{ route('admin.news.index') }}" class="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white mr-4">
+                    {{ __('Annuler') }}
+                </a>
+                <button type="submit" class="px-6 py-2.5 bg-primary-600 text-white font-semibold text-xs leading-tight uppercase rounded shadow-md hover:bg-primary-700 hover:shadow-lg focus:bg-primary-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-primary-800 active:shadow-lg transition duration-150 ease-in-out">
                     {{ __('Créer l\'Actualité') }}
                 </button>
             </div>
@@ -44,7 +39,3 @@
     </div>
 </div>
 @endsection
-
-{{-- Les scripts pour les onglets et TinyMCE sont gérés globalement via app/resources/js/admin/app-admin.js --}}
-{{-- Assurez-vous que les IDs #languageTabsNews et #languageTabContentNews sont utilisés dans _form.blade.php --}}
-{{-- et que initHorizontalTabs est appelé pour eux dans app-admin.js --}}

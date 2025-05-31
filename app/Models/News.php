@@ -8,81 +8,154 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Carbon\Carbon;
+use Spatie\MediaLibrary\MediaCollections\Models\Media; // Nécessaire pour le type hint dans registerMediaConversions
 
 class News extends Model implements HasMedia
 {
     use HasFactory, HasLocalizedFields, InteractsWithMedia;
 
+    /**
+     * Le nom de la table associée au modèle.
+     *
+     * @var string
+     */
+    protected $table = 'news';
+
+    /**
+     * Les attributs qui sont assignables en masse.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'slug',
         'news_category_id',
-        // 'user_id', // ANCIENNE LIGNE À CHANGER/SUPPRIMER
-        'created_by_user_id', // <--- CORRECTION ICI
+        'created_by_user_id',
         'published_at',
         'is_published',
-        'is_featured',
+        'is_featured', // Assurez-vous que cette colonne existe via une migration
 
+        // Champs traduits (le trait s'attend aux noms de base dans $localizedFields)
+        // Les champs réels dans $fillable doivent être les colonnes de la DB
         'title_fr', 'title_en',
-        'summary_fr', 'summary_en',
+        'summary_fr', 'summary_en',         // Renommé depuis 'excerpt' pour cohérence avec votre modèle News.php initial
         'content_fr', 'content_en',
-        'meta_title_fr', 'meta_title_en',
-        'meta_description_fr', 'meta_description_en',
-        'cover_image_alt_fr', 'cover_image_alt_en',
+        'meta_title_fr', 'meta_title_en', // Champs SEO
+        'meta_description_fr', 'meta_description_en', // Champs SEO
+        'cover_image_alt_fr', 'cover_image_alt_en', // Texte alternatif pour l'image de couverture
     ];
 
+    /**
+     * Les champs qui doivent être traduits.
+     * Le trait HasLocalizedFields utilisera ces noms de base.
+     *
+     * @var array<int, string>
+     */
     public array $localizedFields = [
         'title',
-        'summary',
+        'summary',          // Renommé depuis 'excerpt'
         'content',
         'meta_title',
         'meta_description',
-        'cover_image_alt',
+        'cover_image_alt',  // Renommé depuis 'cover_image_alt_text'
     ];
 
+    /**
+     * Les attributs qui doivent être castés vers des types natifs.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'published_at' => 'datetime',
         'is_published' => 'boolean',
-        'is_featured' => 'boolean',
+        'is_featured' => 'boolean', // Assurez-vous que cette colonne existe
+        'news_category_id' => 'integer',
     ];
 
-    // Relations
+    /**
+     * Récupère la catégorie de l'actualité.
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(NewsCategory::class, 'news_category_id');
     }
 
-    public function user(): BelongsTo // Représente l'auteur (created_by)
+    /**
+     * Récupère l'utilisateur qui a créé l'actualité.
+     */
+    public function createdBy(): BelongsTo
     {
-        // Spécifier la clé étrangère correcte si elle n'est pas 'user_id'
-        return $this->belongsTo(User::class, 'created_by_user_id'); // <--- CORRECTION ICI
+        return $this->belongsTo(User::class, 'created_by_user_id');
     }
 
-    // Configuration pour Spatie Media Library
+    /**
+     * Enregistre les collections de médias pour ce modèle.
+     */
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('news_cover_image') // Nom de la collection
+        $this->addMediaCollection('news_cover_image')
             ->singleFile() // Une seule image de couverture par actualité
-            ->useFallbackUrl(asset('images/default_news_placeholder.jpg'))
-            ->useFallbackPath(public_path('images/default_news_placeholder.jpg'));
+            ->useFallbackUrl(asset('assets/images/placeholders/news_default.jpg')) // Chemin vers votre placeholder
+            ->useFallbackPath(public_path('assets/images/placeholders/news_default.jpg')); // Chemin physique vers votre placeholder
     }
 
-    // Optionnel : Définir des conversions d'images (thumbnails, etc.)
+    /**
+     * Enregistre les conversions de médias.
+     */
     public function registerMediaConversions(Media $media = null): void
     {
         $this->addMediaConversion('thumbnail')
               ->width(400)
-              ->height(250) // Ajustez les dimensions selon vos besoins
+              ->height(250) // Vous pouvez ajuster ou ajouter crop, fit, etc.
               ->sharpen(10)
-              ->nonQueued(); // ou ->queued() si vous utilisez une file d'attente pour les conversions
+              ->nonQueued(); // Exécute la conversion immédiatement
+
+        $this->addMediaConversion('card')
+              ->width(600)
+              ->height(400)
+              ->sharpen(10)
+              ->nonQueued();
     }
 
-    public function getRouteKeyName()
+    /**
+     * Récupère la clé de route pour le modèle.
+     * Permet d'utiliser le slug dans les URLs au lieu de l'ID.
+     */
+    public function getRouteKeyName(): string
     {
         return 'slug';
     }
 
-    // Retiré : getCoverImageUrlAttribute (géré par getFirstMediaUrl de Spatie)
-    // Retiré : getLocalizedField (géré par le trait HasLocalizedFields)
+    /**
+     * Accesseur pour obtenir l'URL de l'image de couverture.
+     * Permet d'utiliser $news->cover_image_url dans les vues.
+     */
+    public function getCoverImageUrlAttribute(): ?string
+    {
+        // Le deuxième argument est le nom de la conversion (ex: 'thumbnail') si vous en voulez une spécifique
+        return $this->getFirstMediaUrl('news_cover_image'); 
+    }
+
+    /**
+     * Accesseur pour obtenir l'URL de la miniature de l'image de couverture.
+     */
+    public function getCoverImageThumbnailUrlAttribute(): ?string
+    {
+        return $this->getFirstMediaUrl('news_cover_image', 'thumbnail');
+    }
+    
+    /**
+     * Accesseur pour obtenir l'objet Media de l'image de couverture.
+     */
+    public function getCoverImageMediaAttribute() // : ?Media
+    {
+        return $this->getFirstMedia('news_cover_image');
+    }
+
+    /**
+     * Accesseur pour obtenir le nom de la catégorie (traduit).
+     */
+    public function getCategoryNameAttribute(): ?string
+    {
+        return $this->category ? $this->category->name : null; // Le trait HasLocalizedFields sur NewsCategory gérera la traduction de name
+    }
 }

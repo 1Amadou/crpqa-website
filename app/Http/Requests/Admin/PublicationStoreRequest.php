@@ -3,73 +3,55 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\App; // Pour obtenir les locales
+use Illuminate\Support\Str; // Nécessaire si vous pré-traitez le slug ici
 
 class PublicationStoreRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return true; // Ou mettez votre logique d'autorisation ici (ex: $this->user()->can('create_publications'))
+        return true; // Ou votre logique d'autorisation
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
-     */
     public function rules(): array
     {
-        $rules = [
-            'slug' => 'required|string|max:255|unique:publications,slug',
+        $defaultLocale = config('app.locale', 'fr');
+
+        return [
+            'title_' . $defaultLocale => 'required|string|max:255',
+            // Rendre les autres titres optionnels ou requis selon votre logique
+            // Exemple pour 'en' si c'est une autre locale :
+            // 'title_en' => 'nullable|string|max:255',
+            
+            'slug' => [
+                'nullable', // Rend le champ optionnel
+                'string',
+                'max:255',
+                // L'unicité est vérifiée sur la table 'publications', colonne 'slug'
+                'unique:publications,slug' 
+            ],
             'publication_date' => 'required|date',
-            'type' => 'nullable|string|max:255',
-            'journal_conference_name' => 'nullable|string|max:255',
+            'type' => 'required|string|max:255', // Ajustez si vous utilisez une liste prédéfinie
+            'journal_name' => 'nullable|string|max:255',
+            'conference_name' => 'nullable|string|max:255',
+            'volume' => 'nullable|string|max:255',
+            'issue' => 'nullable|string|max:255',
+            'pages' => 'nullable|string|max:255',
             'doi_url' => 'nullable|url|max:255',
             'external_url' => 'nullable|url|max:255',
+            'authors_internal_notes' => 'nullable|string',
             'authors_external' => 'nullable|string',
-            'is_published' => 'sometimes|boolean',
-            'is_featured' => 'sometimes|boolean',
-            'created_by_user_id' => 'required|exists:users,id', // Ou logique pour l'utilisateur connecté
-            'publication_pdf' => 'nullable|file|mimes:pdf|max:10240', // Max 10MB, PDF seulement
-            // Ajoutez d'autres champs non traduits ici
+            'is_featured' => 'boolean',
+            // 'is_published' => 'boolean', // Si cette colonne existe
+            'created_by_user_id' => 'required|exists:users,id',
+            'publication_pdf' => 'nullable|file|mimes:pdf|max:10240', // Max 10MB
+            'researchers' => 'nullable|array',
+            'researchers.*' => 'exists:researchers,id',
+
+            // Ajoutez les règles pour les autres champs traduits title_xx, abstract_xx
+            // Exemple pour abstract (rendu requis pour la langue par défaut)
+            'abstract_' . $defaultLocale => 'required|string',
+            // 'abstract_en' => 'nullable|string', 
         ];
-
-        // Dynamically add rules for localized fields
-        // Suppose $availableLocales = config('app.available_locales', ['fr', 'en']);
-        $availableLocales = config('translatable.locales') ?: ['fr', 'en']; // Ou votre méthode pour obtenir les locales
-
-        foreach ($availableLocales as $locale) {
-            $rules['title_' . $locale] = 'required|string|max:255';
-            $rules['abstract_' . $locale] = 'required|string';
-        }
-
-        return $rules;
-    }
-
-    /**
-     * Get custom messages for validator errors.
-     *
-     * @return array
-     */
-    public function messages(): array
-    {
-        $messages = [];
-        $availableLocales = config('translatable.locales') ?: ['fr', 'en'];
-
-        foreach ($availableLocales as $locale) {
-            $messages['title_' . $locale . '.required'] = 'Le titre (' . strtoupper($locale) . ') est requis.';
-            $messages['title_' . $locale . '.string'] = 'Le titre (' . strtoupper($locale) . ') doit être une chaîne de caractères.';
-            $messages['title_' . $locale . '.max'] = 'Le titre (' . strtoupper($locale) . ') ne doit pas dépasser 255 caractères.';
-            $messages['abstract_' . $locale . '.required'] = 'Le résumé (' . strtoupper($locale) . ') est requis.';
-            $messages['abstract_' . $locale . '.string'] = 'Le résumé (' . strtoupper($locale) . ') doit être une chaîne de caractères.';
-        }
-        $messages['publication_pdf.mimes'] = 'Le fichier doit être un PDF.';
-        $messages['publication_pdf.max'] = 'Le fichier PDF ne doit pas dépasser 10MB.';
-        // Ajoutez d'autres messages personnalisés
-        return $messages;
     }
 
     /**
@@ -79,12 +61,28 @@ class PublicationStoreRequest extends FormRequest
      */
     protected function prepareForValidation()
     {
+        $defaultLocale = config('app.locale', 'fr');
+        // Si le slug est vide et qu'un titre pour la locale par défaut est présent,
+        // on pourrait le pré-remplir ici pour la validation d'unicité si souhaité,
+        // mais la logique actuelle du contrôleur le gère après validation.
+        // Pour l'instant, nous laissons le contrôleur s'en charger.
+        // Si vous voulez générer et valider l'unicité du slug même s'il est vide :
+        /*
+        if (empty($this->slug) && !empty($this->input('title_' . $defaultLocale))) {
+            $slug = Str::slug($this->input('title_' . $defaultLocale));
+            // La logique pour assurer l'unicité ici serait complexe car elle nécessiterait
+            // de vérifier la base de données, ce qui n'est pas idéal dans prepareForValidation.
+            // Il est préférable de gérer la génération finale et l'unicité dans le contrôleur.
+            // $this->merge([
+            //     'slug' => $slug,
+            // ]);
+        }
+        */
+        
+        // S'assurer que les booléens sont bien présents dans la requête pour la validation
         $this->merge([
-            'is_published' => $this->boolean('is_published'),
             'is_featured' => $this->boolean('is_featured'),
-            // Assigner l'ID de l'utilisateur connecté si created_by_user_id n'est pas soumis
-            // ou si vous avez une logique spécifique.
-            // 'created_by_user_id' => $this->created_by_user_id ?? auth()->id(),
+            // 'is_published' => $this->boolean('is_published'), // Si la colonne existe
         ]);
     }
 }

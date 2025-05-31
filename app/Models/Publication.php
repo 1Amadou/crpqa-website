@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -21,24 +22,19 @@ class Publication extends Model implements HasMedia
      */
     protected $fillable = [
         'slug',
-        'authors_internal_notes', // Provenant de create_publications_table
-        'authors_external',       // Provenant de create_publications_table
+        'authors_internal_notes',
+        'authors_external',
         'publication_date',
-        'type',                   // Provenant de create_publications_table
-        'journal_name',           // Provenant de create_publications_table
-        'conference_name',        // Provenant de create_publications_table
-        'volume',                 // Provenant de create_publications_table
-        'issue',                  // Provenant de create_publications_table
-        'pages',                  // Provenant de create_publications_table
-        'doi_url',                // Provenant de create_publications_table
-        'external_url',           // Provenant de create_publications_table
-        // 'pdf_path' n'est plus nécessaire ici car géré par Spatie Media Library
-        'is_featured',            // Provenant de create_publications_table
-        // 'is_published', // À vérifier : cette colonne existe-t-elle dans votre table 'publications' ?
-                            // Non présente dans create_publications_table.php. Si ajoutée ailleurs, c'est ok.
-        'created_by_user_id',     // Ajouté par une migration ultérieure
-
-        // Champs traduits (les anciennes colonnes 'title' et 'abstract' ne doivent plus être ici)
+        'type',
+        'journal_name',
+        'conference_name',
+        'volume',
+        'issue',
+        'pages',
+        'doi_url',
+        'external_url',
+        'is_featured',
+        'created_by_user_id',
         'title_fr',
         'title_en',
         'abstract_fr',
@@ -46,26 +42,26 @@ class Publication extends Model implements HasMedia
     ];
 
     /**
-     * The attributes that should be cast.
+     * The attributes that should be cast to native types.
      *
      * @var array<string, string>
      */
     protected $casts = [
         'publication_date' => 'date',
-        'is_featured' => 'boolean',
-        // 'is_published' => 'boolean', // Idem, à caster seulement si la colonne existe.
-        // 'authors_external' => 'array', // Seulement si vous stockez du JSON valide dans ce champ `text`.
-                                        // Sinon, pas besoin de caster.
+        'is_featured'      => 'boolean',
     ];
 
     /**
      * Define the localized fields.
+     *
      * These are the base names of the fields that have translations.
-     * The trait will expect columns like 'title_fr', 'title_en', etc.
      *
      * @var array<int, string>
      */
-    protected array $localizedFields = ['title', 'abstract']; // PARFAIT
+    protected array $localizedFields = [
+        'title',
+        'abstract',
+    ];
 
     /**
      * Register the media collections.
@@ -73,12 +69,8 @@ class Publication extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('publication_pdf')
-            ->singleFile()
-            ->acceptsMimeTypes(['application/pdf']);
-
-        // Optionnel: Si vous voulez une image de couverture pour les publications
-        // $this->addMediaCollection('publication_cover_image')
-        //     ->singleFile(); // ou ->useDisk('public')->acceptsMimeTypes(['image/jpeg', 'image/png']) etc.
+             ->singleFile()
+             ->acceptsMimeTypes(['application/pdf']);
     }
 
     /**
@@ -90,24 +82,25 @@ class Publication extends Model implements HasMedia
     }
 
     /**
-     * The researchers that are authors of this publication.
+     * Get the researchers that are authors of this publication.
      */
     public function researchers(): BelongsToMany
     {
-        return $this->belongsToMany(Researcher::class, 'publication_researcher', 'publication_id', 'researcher_id');
+        return $this->belongsToMany(
+            Researcher::class,
+            'publication_researcher',
+            'publication_id',
+            'researcher_id'
+        );
     }
 
     /**
-     * Get the route key for the model.
-     *
-     * @return string
+     * Determine which field is used for route model binding.
      */
-    public function getRouteKeyName()
+    public function getRouteKeyName(): string
     {
         return 'slug';
     }
-
-    // ACCESSEURS POUR LES MÉDIAS (OPTIONNEL MAIS PRATIQUE)
 
     /**
      * Get the URL of the publication PDF.
@@ -118,18 +111,49 @@ class Publication extends Model implements HasMedia
     }
 
     /**
-     * Get the PDF media object.
+     * Get the publication PDF media object.
      */
-    public function getPdfMediaAttribute() // : ?Media // PHP 7.4+ pour le type hint
+    public function getPdfMediaAttribute()
     {
         return $this->getFirstMedia('publication_pdf');
     }
 
-    // Si vous ajoutez une image de couverture:
-    // public function getCoverImageUrlAttribute(): ?string
-    // {
-    //     // Si vous voulez une URL avec une conversion (ex: une miniature)
-    //     // return $this->getFirstMediaUrl('publication_cover_image', 'thumb');
-    //     return $this->getFirstMediaUrl('publication_cover_image');
-    // }
+    /**
+     * Return a list of publication types and their display labels.
+     *
+     * @return array<string, string>
+     */
+    public static function types(): array
+    {
+        return [
+            'research_article'   => 'Research Article',
+            'conference_paper'   => 'Conference Paper',
+            'book_chapter'       => 'Book Chapter',
+            'thesis'             => 'Thesis',
+            'report'             => 'Report',
+        ];
+    }
+
+    /**
+     * Accessor to get a human-readable label for "type".
+     */
+    public function getTypeDisplayAttribute(): string
+    {
+        $types = self::types();
+        return $types[$this->type] ?? Str::title(str_replace('_', ' ', $this->type));
+    }
+
+    /**
+     * Automatically generate slug from title_en if not provided.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (Publication $publication) {
+            if (empty($publication->slug) && !empty($publication->title_en)) {
+                $publication->slug = Str::slug($publication->title_en);
+            }
+        });
+    }
 }

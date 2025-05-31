@@ -2,58 +2,72 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Publication; // Assurez-vous que le modèle Publication est bien ici
+use App\Models\Publication;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str; // Pour Str::limit
+use Illuminate\Support\Str;
 
 class PublicPublicationController extends Controller
 {
-    /**
-     * Affiche la liste des publications.
-     */
+    private function getPublicationTypes(): array
+    {
+        // Doit correspondre aux clés utilisées dans PublicationController (Admin) et potentiellement dans la factory/seeder
+        return [
+            'journal_article' => __('publications.types.journal_article'), // Exemple avec traduction
+            'conference_paper' => __('publications.types.conference_paper'),
+            'book_chapter' => __('publications.types.book_chapter'),
+            'book' => __('publications.types.book'),
+            'report' => __('publications.types.report'),
+            'thesis' => __('publications.types.thesis'),
+            'preprint' => __('publications.types.preprint'),
+            'other' => __('publications.types.other'),
+        ];
+        // Si vous n'utilisez pas les fichiers de traduction, revenez à un tableau simple :
+        // return [
+        //     'journal_article' => 'Article de Journal',
+        //     'conference_paper' => 'Article de Conférence',
+        //     // ... etc.
+        // ];
+    }
+
     public function index()
     {
-        $publications = Publication::orderBy('publication_date', 'desc')
-                                   // ->where('is_published', true) // Si vous avez un tel champ
-                                   ->paginate(10); // Ou le nombre souhaité
+        $query = Publication::query();
 
-        // Vous pourriez vouloir passer aussi les types de publication pour des filtres, etc.
-        return view('public.publications.index', compact('publications')); // Vue à créer
+        // VALIDER : Décommentez et utilisez si vous avez une colonne 'is_published'
+        // if (Schema::hasColumn('publications', 'is_published')) {
+        //     $query->where('is_published', true);
+        // }
+
+        $publications = $query->with(['media', 'researchers']) // Charger les médias (pour PDF) et les chercheurs
+                               ->orderBy('publication_date', 'desc')
+                               ->paginate(10);
+
+        return view('public.publications.index', compact('publications'));
     }
 
-    /**
-     * Affiche une publication spécifique par son slug.
-     */
-    public function show($slug) // Ou public function show(Publication $publication) avec Route Model Binding
+    // Utilisation du Route Model Binding pour $publication (basé sur le slug)
+    public function show(Publication $publication)
     {
-        $publication = Publication::where('slug', $slug)
-                                // ->where('is_published', true) // Si vous avez un tel champ
-                                ->with('researchers') // Charger les auteurs chercheurs
-                                ->firstOrFail();
+        // VALIDER : Décommentez et utilisez si vous avez une colonne 'is_published'
+        // if (Schema::hasColumn('publications', 'is_published') && !$publication->is_published) {
+        //     abort(404); // Ne pas montrer les publications non publiées
+        // }
+        
+        $publication->load(['researchers', 'createdBy', 'media']);
 
-        // Pour les méta-données SEO (simple exemple, vous pouvez l'affiner)
-        // La table 'publications' n'a pas de champs meta_title/meta_description dédiés pour l'instant
-        // d'après le schéma que j'ai. Nous pourrions les ajouter plus tard si besoin.
-        $metaTitle = $publication->title;
-        $metaDescription = Str::limit(strip_tags($publication->abstract), 160);
+        // Le trait HasLocalizedFields devrait gérer l'affichage de $publication->title et $publication->abstract
+        // dans la langue courante directement dans la vue.
+        $metaTitle = $publication->title; // Accède au titre dans la locale courante
+        $metaDescription = Str::limit(strip_tags($publication->abstract), 160); // Accède à l'abstract dans la locale courante
 
-        // Pour afficher le type de publication de manière lisible
-        // Vous aviez une méthode getPublicationTypes() dans Admin/PublicationController.
-        // Il faudrait une manière d'y accéder ici aussi (helper, trait, service, ou dupliquer la logique).
-        // Pour l'instant, on affiche la clé brute :
-        $publicationTypeDisplay = $publication->type;
-        // Idéalement : $publicationTypeDisplay = $this->getPublicationTypesArray()[$publication->type] ?? $publication->type;
+        $publicationTypes = $this->getPublicationTypes();
+        $publicationTypeDisplay = $publicationTypes[$publication->type] ?? $publication->type;
 
-        return view('public.publications.show', compact('publication', 'metaTitle', 'metaDescription', 'publicationTypeDisplay')); // Vue à créer
+        return view('public.publications.show', compact(
+            'publication',
+            'metaTitle',
+            'metaDescription',
+            'publicationTypeDisplay'
+        ));
     }
-
-    // Optionnel: Si vous aviez une méthode pour les types dans le contrôleur admin
-    // private function getPublicationTypesArray(): array
-    // {
-    //     return [
-    //         'Journal Article' => 'Article de Revue',
-    //         'Conference Paper' => 'Communication de Conférence',
-    //         // ... autres types ...
-    //     ];
-    // }
 }
