@@ -4,174 +4,231 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Researcher;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage; // Important pour la gestion des fichiers
-use Illuminate\Support\Str; // Optionnel, pour générer des noms de fichiers uniques
+use App\Models\User; // Pour lier un chercheur à un compte utilisateur
+// Pour une meilleure pratique, déplacez les règles de validation dans ces Form Requests :
+use App\Http\Requests\Admin\ResearcherStoreRequest;
+use App\Http\Requests\Admin\ResearcherUpdateRequest;
+use Illuminate\Http\Request; // À remplacer par les FormRequests spécifiques
+use Illuminate\Support\Facades\Auth; // Si vous voulez lier à l'utilisateur connecté par défaut
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ResearcherController extends Controller
 {
-    /**
-     * Helper function to define validation rules.
-     * @param Researcher|null $researcher
-     * @return array
-     */
+    protected array $availableLocales;
+
+    public function __construct()
+    {
+        // Adaptez les noms des permissions à votre configuration
+        // $this->middleware(['permission:manage researchers'])->except(['show']);
+        // $this->middleware(['permission:view researchers'])->only(['show']);
+        $this->availableLocales = config('app.available_locales', ['fr', 'en']);
+    }
+
+    // Déplacer validationRules dans ResearcherStoreRequest & ResearcherUpdateRequest
     private function validationRules(Researcher $researcher = null): array
     {
-        $photoRule = 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048'; // 2MB Max
-        if (!$researcher) { // For store method (creation)
-            // $photoRule = 'sometimes|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048'; // 'sometimes' if photo is optional on create
-        }
-
-        return [
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'title' => 'nullable|string|max:100',
-            'position' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255|unique:researchers,email,' . ($researcher ? $researcher->id : 'NULL') . ',id',
-            'phone_number' => 'nullable|string|max:50',
-            'biography' => 'nullable|string',
-            'photo' => $photoRule, // Validation rule for the uploaded photo file
-            'research_areas' => 'nullable|string',
+        $primaryLocale = config('app.locale', 'fr');
+        $rules = [
+            'slug' => [
+                'nullable', 'string', 'max:255', 'alpha_dash:ascii',
+                $researcher ? Rule::unique('researchers', 'slug')->ignore($researcher->id) : 'unique:researchers,slug',
+            ],
+            'email' => [
+                'nullable', 'string', 'email', 'max:255',
+                $researcher ? Rule::unique('researchers', 'email')->ignore($researcher->id) : 'unique:researchers,email',
+            ],
+            'phone' => 'nullable|string|max:50', // 'phone' au lieu de 'phone_number'
+            'website_url' => 'nullable|url|max:255',
             'linkedin_url' => 'nullable|url|max:255',
+            'researchgate_url' => 'nullable|url|max:255',
             'google_scholar_url' => 'nullable|url|max:255',
-            'is_active' => 'nullable|boolean',
+            'orcid_id' => 'nullable|string|max:100', // Ajustez la taille si besoin
+            'is_active' => 'boolean',
+            'user_id' => 'nullable|exists:users,id',
             'display_order' => 'nullable|integer|min:0',
+            'researcher_photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // Pour Spatie
+            'remove_researcher_photo' => 'nullable|boolean',
         ];
+
+        foreach ($this->availableLocales as $locale) {
+            $rules['first_name_' . $locale] = ($locale === $primaryLocale ? 'required' : 'nullable') . '|string|max:255';
+            $rules['last_name_' . $locale] = ($locale === $primaryLocale ? 'required' : 'nullable') . '|string|max:255';
+            $rules['title_position_' . $locale] = 'nullable|string|max:255'; // 'title_position' au lieu de 'title' et 'position' séparés
+            $rules['biography_' . $locale] = 'nullable|string';
+            $rules['research_interests_' . $locale] = 'nullable|string'; // 'research_interests' au lieu de 'research_areas'
+            $rules['photo_alt_text_' . $locale] = 'nullable|string|max:255'; // Pour le texte alternatif de la photo
+        }
+        return $rules;
     }
 
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
-{
-    $researchers = Researcher::orderBy('display_order', 'asc')
-                             ->orderBy('last_name_fr', 'asc') // Remplace last_name
-                             ->orderBy('first_name_fr', 'asc') // Remplace first_name
-                             ->paginate(15);
+    {
+        $primaryLocale = app()->getLocale();
+        $researchers = Researcher::with('user', 'media') // Charger l'utilisateur et les médias (photo)
+            ->orderBy('display_order', 'asc')
+            ->orderBy('last_name_' . $primaryLocale, 'asc')
+            ->orderBy('first_name_' . $primaryLocale, 'asc')
+            ->paginate(15);
 
-    return view('admin.researchers.index', compact('researchers'));
-}
+        return view('admin.researchers.index', compact('researchers'));
+    }
 
-
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        return view('admin.researchers.create');
+        $researcher = new Researcher(['is_active' => true, 'display_order' => 0]);
+        $availableLocales = $this->availableLocales;
+        $users = User::orderBy('name')->pluck('name', 'id'); // Pour lier à un compte utilisateur
+
+        return view('admin.researchers.create', compact('researcher', 'availableLocales', 'users'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request) // Remplacer par ResearcherStoreRequest $request
     {
         $validatedData = $request->validate($this->validationRules());
+        $primaryLocale = config('app.locale', 'fr');
 
-        $researcher = new Researcher();
-        $researcher->first_name = $validatedData['first_name'];
-        $researcher->last_name = $validatedData['last_name'];
-        $researcher->title = $validatedData['title'];
-        $researcher->position = $validatedData['position'];
-        $researcher->email = $validatedData['email'];
-        $researcher->phone_number = $validatedData['phone_number'];
-        $researcher->biography = $validatedData['biography'];
-        $researcher->research_areas = $validatedData['research_areas'];
-        $researcher->linkedin_url = $validatedData['linkedin_url'];
-        $researcher->google_scholar_url = $validatedData['google_scholar_url'];
-        $researcher->is_active = $request->boolean('is_active');
-        $researcher->display_order = $validatedData['display_order'] ?? 0;
-
-        if ($request->hasFile('photo')) {
-            // Générer un nom de fichier unique pour éviter les conflits
-            $fileName = Str::slug($validatedData['last_name'] . '-' . $validatedData['first_name']) . '-' . time() . '.' . $request->file('photo')->getClientOriginalExtension();
-            // Stocker le fichier dans 'storage/app/public/researcher_photos'
-            // Assurez-vous d'avoir exécuté `php artisan storage:link`
-            $path = $request->file('photo')->storeAs('researcher_photos', $fileName, 'public');
-            $researcher->photo_path = $path;
+        $researcherData = [];
+        foreach ($this->availableLocales as $locale) {
+            $researcherData['first_name_' . $locale] = $validatedData['first_name_' . $locale] ?? null;
+            $researcherData['last_name_' . $locale] = $validatedData['last_name_' . $locale] ?? null;
+            $researcherData['title_position_' . $locale] = $validatedData['title_position_' . $locale] ?? null;
+            $researcherData['biography_' . $locale] = $validatedData['biography_' . $locale] ?? null;
+            $researcherData['research_interests_' . $locale] = $validatedData['research_interests_' . $locale] ?? null;
+            $researcherData['photo_alt_text_' . $locale] = $validatedData['photo_alt_text_' . $locale] ?? ($validatedData['first_name_' . $locale] ?? '').' '.($validatedData['last_name_' . $locale] ?? '') ;
         }
 
-        $researcher->save();
+        // Génération du slug à partir du nom complet de la langue par défaut
+        $firstNameForSlug = $validatedData['first_name_' . $primaryLocale] ?? '';
+        $lastNameForSlug = $validatedData['last_name_' . $primaryLocale] ?? '';
+        $nameForSlug = trim($firstNameForSlug . ' ' . $lastNameForSlug) ?: 'chercheur-' . time();
 
+        if (empty($validatedData['slug'])) {
+            $slug = Str::slug($nameForSlug);
+            $originalSlug = $slug;
+            $count = 1;
+            while (Researcher::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $count++;
+            }
+            $researcherData['slug'] = $slug;
+        } else {
+            $researcherData['slug'] = Str::slug($validatedData['slug']);
+        }
+        
+        $researcherData['email'] = $validatedData['email'] ?? null;
+        $researcherData['phone'] = $validatedData['phone'] ?? null;
+        $researcherData['website_url'] = $validatedData['website_url'] ?? null;
+        $researcherData['linkedin_url'] = $validatedData['linkedin_url'] ?? null;
+        $researcherData['researchgate_url'] = $validatedData['researchgate_url'] ?? null;
+        $researcherData['google_scholar_url'] = $validatedData['google_scholar_url'] ?? null;
+        $researcherData['orcid_id'] = $validatedData['orcid_id'] ?? null;
+        $researcherData['is_active'] = $request->boolean('is_active');
+        $researcherData['user_id'] = $validatedData['user_id'] ?? null;
+        $researcherData['display_order'] = $validatedData['display_order'] ?? 0;
+        
+        $researcher = Researcher::create($researcherData);
+
+        if ($request->hasFile('researcher_photo')) {
+            $researcher->addMediaFromRequest('researcher_photo')->toMediaCollection('researcher_photo');
+        }
+
+        $displayName = $researcher->getFullNameAttribute(); // Utilise l'accesseur
         return redirect()->route('admin.researchers.index')
-                         ->with('success', 'Profil du chercheur "' . $researcher->first_name . ' ' . $researcher->last_name . '" créé avec succès.');
+                         ->with('success', "Chercheur \"{$displayName}\" créé avec succès.");
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Researcher $researcher)
     {
-        return view('admin.researchers.show', compact('researcher'));
+        $researcher->load(['user', 'media', 'publications']); // Charger les relations
+        $availableLocales = $this->availableLocales;
+        return view('admin.researchers.show', compact('researcher', 'availableLocales'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Researcher $researcher)
     {
-        return view('admin.researchers.edit', compact('researcher'));
+        $researcher->load('media'); // Charger la photo pour affichage/suppression
+        $availableLocales = $this->availableLocales;
+        $users = User::orderBy('name')->pluck('name', 'id');
+
+        return view('admin.researchers.edit', compact('researcher', 'availableLocales', 'users'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Researcher $researcher)
+    public function update(Request $request, Researcher $researcher) // Remplacer par ResearcherUpdateRequest $request
     {
         $validatedData = $request->validate($this->validationRules($researcher));
+        $primaryLocale = config('app.locale', 'fr');
 
-        $researcher->first_name = $validatedData['first_name'];
-        $researcher->last_name = $validatedData['last_name'];
-        $researcher->title = $validatedData['title'];
-        $researcher->position = $validatedData['position'];
-        $researcher->email = $validatedData['email'];
-        $researcher->phone_number = $validatedData['phone_number'];
-        $researcher->biography = $validatedData['biography'];
-        $researcher->research_areas = $validatedData['research_areas'];
-        $researcher->linkedin_url = $validatedData['linkedin_url'];
-        $researcher->google_scholar_url = $validatedData['google_scholar_url'];
-        $researcher->is_active = $request->boolean('is_active');
-        $researcher->display_order = $validatedData['display_order'] ?? 0;
-
-        if ($request->hasFile('photo')) {
-            // Supprimer l'ancienne photo si elle existe
-            if ($researcher->photo_path && Storage::disk('public')->exists($researcher->photo_path)) {
-                Storage::disk('public')->delete($researcher->photo_path);
-            }
-            // Stocker la nouvelle photo
-            $fileName = Str::slug($validatedData['last_name'] . '-' . $validatedData['first_name']) . '-' . time() . '.' . $request->file('photo')->getClientOriginalExtension();
-            $path = $request->file('photo')->storeAs('researcher_photos', $fileName, 'public');
-            $researcher->photo_path = $path;
-        } elseif ($request->boolean('remove_photo')) { // Si une case "supprimer photo" est cochée
-            if ($researcher->photo_path && Storage::disk('public')->exists($researcher->photo_path)) {
-                Storage::disk('public')->delete($researcher->photo_path);
-            }
-            $researcher->photo_path = null;
+        $updateData = [];
+         foreach ($this->availableLocales as $locale) {
+            if ($request->filled('first_name_' . $locale)) $updateData['first_name_' . $locale] = $validatedData['first_name_' . $locale];
+            if ($request->filled('last_name_' . $locale)) $updateData['last_name_' . $locale] = $validatedData['last_name_' . $locale];
+            if ($request->filled('title_position_' . $locale)) $updateData['title_position_' . $locale] = $validatedData['title_position_' . $locale];
+            if ($request->filled('biography_' . $locale)) $updateData['biography_' . $locale] = $validatedData['biography_' . $locale];
+            if ($request->filled('research_interests_' . $locale)) $updateData['research_interests_' . $locale] = $validatedData['research_interests_' . $locale];
+            $updateData['photo_alt_text_' . $locale] = $validatedData['photo_alt_text_' . $locale] ?? ($validatedData['first_name_' . $locale] ?? $researcher->getTranslation('first_name', $locale, false)).' '.($validatedData['last_name_' . $locale] ?? $researcher->getTranslation('last_name', $locale, false));
         }
 
+        $currentFullNameDefaultLocale = trim(($researcher->getTranslation('first_name', $primaryLocale, false) ?? '') . ' ' . ($researcher->getTranslation('last_name', $primaryLocale, false) ?? ''));
+        $newFirstNameDefaultLocale = $validatedData['first_name_' . $primaryLocale] ?? $researcher->getTranslation('first_name', $primaryLocale, false);
+        $newLastNameDefaultLocale = $validatedData['last_name_' . $primaryLocale] ?? $researcher->getTranslation('last_name', $primaryLocale, false);
+        $newNameForSlug = trim($newFirstNameDefaultLocale . ' ' . $newLastNameDefaultLocale);
 
-        $researcher->save();
+        if (empty($validatedData['slug'])) {
+            if ($currentFullNameDefaultLocale !== $newNameForSlug || !$researcher->slug) {
+                if(!empty($newNameForSlug)){
+                    $slug = Str::slug($newNameForSlug);
+                    $originalSlug = $slug;
+                    $count = 1;
+                    while (Researcher::where('slug', $slug)->where('id', '!=', $researcher->id)->exists()) {
+                        $slug = $originalSlug . '-' . $count++;
+                    }
+                    $updateData['slug'] = $slug;
+                }
+            }
+        } elseif ($validatedData['slug'] !== $researcher->slug) {
+            $slug = Str::slug($validatedData['slug']);
+            $originalSlug = $slug;
+            $count = 1;
+            while (Researcher::where('slug', $slug)->where('id', '!=', $researcher->id)->exists()) {
+                $slug = $originalSlug . '-' . $count++;
+            }
+            $updateData['slug'] = $slug;
+        }
 
+        $updateData['email'] = $validatedData['email'] ?? null;
+        $updateData['phone'] = $validatedData['phone'] ?? null;
+        $updateData['website_url'] = $validatedData['website_url'] ?? null;
+        $updateData['linkedin_url'] = $validatedData['linkedin_url'] ?? null;
+        $updateData['researchgate_url'] = $validatedData['researchgate_url'] ?? null;
+        $updateData['google_scholar_url'] = $validatedData['google_scholar_url'] ?? null;
+        $updateData['orcid_id'] = $validatedData['orcid_id'] ?? null;
+        $updateData['is_active'] = $request->boolean('is_active');
+        $updateData['user_id'] = $validatedData['user_id'] ?? null;
+        $updateData['display_order'] = $validatedData['display_order'] ?? 0;
+
+        $researcher->update($updateData);
+
+        if ($request->hasFile('researcher_photo')) {
+            $researcher->clearMediaCollection('researcher_photo');
+            $researcher->addMediaFromRequest('researcher_photo')->toMediaCollection('researcher_photo');
+        } elseif ($request->boolean('remove_researcher_photo')) {
+            $researcher->clearMediaCollection('researcher_photo');
+        }
+
+        $displayName = $researcher->getFullNameAttribute();
         return redirect()->route('admin.researchers.index')
-                         ->with('success', 'Profil du chercheur "' . $researcher->first_name . ' ' . $researcher->last_name . '" mis à jour avec succès.');
+                         ->with('success', "Chercheur \"{$displayName}\" mis à jour avec succès.");
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Researcher $researcher)
     {
-        $researcherName = $researcher->first_name . ' ' . $researcher->last_name;
+        $displayName = $researcher->getFullNameAttribute();
 
-        // Supprimer la photo associée si elle existe
-        if ($researcher->photo_path && Storage::disk('public')->exists($researcher->photo_path)) {
-            Storage::disk('public')->delete($researcher->photo_path);
-        }
-
+        $researcher->clearMediaCollection('researcher_photo'); // Supprimer la photo associée
+        $researcher->publications()->detach(); // Détacher des publications
         $researcher->delete();
 
         return redirect()->route('admin.researchers.index')
-                         ->with('success', 'Profil du chercheur "' . $researcherName . '" supprimé avec succès.');
+                         ->with('success', "Chercheur \"{$displayName}\" et sa photo associée ont été supprimés.");
     }
 }

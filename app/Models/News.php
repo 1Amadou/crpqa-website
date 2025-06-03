@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Spatie\MediaLibrary\MediaCollections\Models\Media; // Nécessaire pour le type hint dans registerMediaConversions
+use Spatie\MediaLibrary\MediaCollections\Models\Media; 
+
 
 class News extends Model implements HasMedia
 {
@@ -56,7 +57,8 @@ class News extends Model implements HasMedia
         'content',
         'meta_title',
         'meta_description',
-        'cover_image_alt',  // Renommé depuis 'cover_image_alt_text'
+        'cover_image_alt',  
+        'name',
     ];
 
     /**
@@ -67,8 +69,9 @@ class News extends Model implements HasMedia
     protected $casts = [
         'published_at' => 'datetime',
         'is_published' => 'boolean',
-        'is_featured' => 'boolean', // Assurez-vous que cette colonne existe
+        'is_featured' => 'boolean', 
         'news_category_id' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     /**
@@ -120,7 +123,12 @@ class News extends Model implements HasMedia
      * Récupère la clé de route pour le modèle.
      * Permet d'utiliser le slug dans les URLs au lieu de l'ID.
      */
-    public function getRouteKeyName(): string
+    public function newsItems(): HasMany // Ou news()
+    {
+        return $this->hasMany(News::class, 'news_category_id', 'id'); // Utiliser le modèle News consolidé
+    }
+    
+    public function getRouteKeyName()
     {
         return 'slug';
     }

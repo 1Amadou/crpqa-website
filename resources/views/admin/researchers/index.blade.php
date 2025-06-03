@@ -1,118 +1,134 @@
 @extends('layouts.admin')
 
+@section('title', __('Gestion des Chercheurs'))
+
+@php
+    $primaryLocale = app()->getLocale(); // Locale actuelle pour l'affichage des champs traduits
+@endphp
+
 @section('header')
-    <div class="flex flex-wrap justify-between items-center gap-2">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+    <div class="flex flex-wrap justify-between items-center gap-4">
+        <h1 class="text-2xl font-semibold text-gray-800 dark:text-white leading-tight">
             {{ __('Gestion des Chercheurs et Membres de l\'Équipe') }}
-        </h2>
-        <a href="{{ route('admin.researchers.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium shadow-sm transition ease-in-out duration-150">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block -mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-            </svg>
-            {{ __('Ajouter un Chercheur') }}
-        </a>
+        </h1>
+        @can('manage researchers') {{-- Vérifier la permission --}}
+            <a href="{{ route('admin.researchers.create') }}" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                <x-heroicon-o-plus-circle class="h-5 w-5 mr-2"/>
+                {{ __('Ajouter un Chercheur') }}
+            </a>
+        @endcan
     </div>
 @endsection
 
 @section('content')
-    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-        <div class="p-2 md:p-6 border-b border-gray-200">
+<div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+    <div class="p-4 sm:p-6">
+        @if (session('success'))
+            <div class="mb-4 p-4 text-sm bg-green-100 dark:bg-green-700 text-green-700 dark:text-green-100 rounded-md shadow-sm">
+                {{ session('success') }}
+            </div>
+        @endif
+        @if (session('error'))
+            <div class="mb-4 p-4 text-sm bg-red-100 dark:bg-red-700 text-red-700 dark:text-red-100 rounded-md shadow-sm">
+                {{ session('error') }}
+            </div>
+        @endif
 
-            {{-- Messages de session (succès, erreur) --}}
-            @if (session('success'))
-                <div class="mb-4 p-4 bg-green-100 text-green-700 border border-green-300 rounded-md shadow-sm animate-pulse delay-1000 duration-1000">
-                    {{ session('success') }}
-                </div>
-            @endif
-            @if (session('error'))
-                <div class="mb-4 p-4 bg-red-100 text-red-700 border border-red-300 rounded-md shadow-sm">
-                    {{ session('error') }}
-                </div>
-            @endif
-
-            @if($researchers->count() > 0)
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom & Prénom</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Position</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Email</th>
-                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actif</th>
-                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Ordre</th>
-                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        @if($researchers->count() > 0)
+            <div class="overflow-x-auto align-middle inline-block min-w-full">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('Photo') }}</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('Nom Complet') }}</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell">{{ __('Titre/Position') }}</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden lg:table-cell">{{ __('Email') }}</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('Actif') }}</th>
+                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell">{{ __('Ordre') }}</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('Actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                        @foreach ($researchers as $researcher)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    @if($researcher->photo_thumbnail_url) {{-- Utilise l'accesseur du modèle Researcher --}}
+                                        <img src="{{ $researcher->photo_thumbnail_url }}"
+                                             alt="{{ $researcher->getTranslation('photo_alt_text', $primaryLocale, false) ?: $researcher->full_name }}"
+                                             class="h-10 w-10 rounded-full object-cover shadow-sm">
+                                    @else
+                                        <div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500 shadow-sm">
+                                            <x-heroicon-o-user-circle class="h-7 w-7"/>
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $researcher->full_name }}</div>
+                                    {{-- Le full_name est un accesseur qui utilise les champs localisés first_name et last_name --}}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 hidden md:table-cell max-w-xs break-words">
+                                    {{ Str::limit($researcher->getTranslation('title_position', $primaryLocale, false), 40) }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden lg:table-cell">
+                                    @if($researcher->email)
+                                        <a href="mailto:{{ $researcher->email }}" class="hover:text-primary-600 dark:hover:text-primary-400 hover:underline">{{ $researcher->email }}</a>
+                                    @else
+                                        {{ __('N/A') }}
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center text-sm">
+                                    @if($researcher->is_active)
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100">{{ __('Oui') }}</span>
+                                    @else
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100">{{ __('Non') }}</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400 hidden md:table-cell">
+                                    {{ $researcher->display_order }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                    @can('view researchers')
+                                    <a href="{{ route('admin.researchers.show', $researcher->slug) }}" class="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 mr-2 p-1 inline-block" title="{{__('Voir')}}">
+                                        <x-heroicon-o-eye class="h-5 w-5"/>
+                                    </a>
+                                    @endcan
+                                    @can('manage researchers')
+                                    <a href="{{ route('admin.researchers.edit', $researcher->slug) }}" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 mr-2 p-1 inline-block" title="{{__('Modifier')}}">
+                                        <x-heroicon-o-pencil-square class="h-5 w-5"/>
+                                    </a>
+                                    <form action="{{ route('admin.researchers.destroy', $researcher->slug) }}" method="POST" class="inline-block" onsubmit="return confirm('{{ __('Êtes-vous sûr de vouloir supprimer le profil de :name ?', ['name' => addslashes($researcher->full_name)]) }}');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1" title="{{__('Supprimer')}}">
+                                            <x-heroicon-o-trash class="h-5 w-5"/>
+                                        </button>
+                                    </form>
+                                    @endcan
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach ($researchers as $researcher)
-                                <tr>
-                                    <td class="px-4 py-3 whitespace-nowrap">
-                                        @if($researcher->photo_path && Storage::disk('public')->exists($researcher->photo_path))
-                                            <img src="{{ Storage::url($researcher->photo_path) }}" alt="Photo de {{ $researcher->first_name }} {{ $researcher->last_name }}" class="h-10 w-10 rounded-full object-cover shadow-sm">
-                                        @else
-                                            <div class="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-500 shadow-sm">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                </svg>
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ $researcher->last_name }}, {{ $researcher->first_name }}</div>
-                                        @if($researcher->title)
-                                            <div class="text-xs text-gray-500">{{ $researcher->title }}</div>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
-                                        {{ Str::limit($researcher->position, 40) }}
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
-                                        @if($researcher->email)
-                                            <a href="mailto:{{ $researcher->email }}" class="hover:underline">{{ $researcher->email }}</a>
-                                        @else
-                                            N/A
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-center text-sm">
-                                        @if($researcher->is_active)
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Oui</span>
-                                        @else
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Non</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-center text-sm text-gray-500 hidden md:table-cell">
-                                        {{ $researcher->display_order }}
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                                        <a href="{{ route('admin.researchers.show', $researcher) }}" class="text-emerald-600 hover:text-emerald-700 mr-2" title="Voir">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg>
-                                        </a>
-                                        <a href="{{ route('admin.researchers.edit', $researcher) }}" class="text-indigo-600 hover:text-indigo-700 mr-2" title="Modifier">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
-                                        </a>
-                                        <form action="{{ route('admin.researchers.destroy', $researcher) }}" method="POST" class="inline-block" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer définitivement le profil de \'{{ addslashes($researcher->first_name . ' ' . $researcher->last_name) }}\' ? Cette action est irréversible.');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-700" title="Supprimer">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-6">
+                {{ $researchers->links() }}
+            </div>
+        @else
+            <div class="text-center py-8">
+                <x-heroicon-o-user-group class="mx-auto h-12 w-12 text-gray-400"/>
+                <h3 class="mt-2 text-lg font-medium text-gray-800 dark:text-white">{{ __('Aucun profil de chercheur trouvé.') }}</h3>
+                @can('manage researchers')
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ __('Commencez par en créer un nouveau.') }}
+                </p>
                 <div class="mt-6">
-                    {{ $researchers->links() }} {{-- Affiche les liens de pagination --}}
+                    <a href="{{ route('admin.researchers.create') }}" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-gray-800">
+                        {{ __('Ajouter un Chercheur') }}
+                    </a>
                 </div>
-            @else
-                <p class="text-gray-700 py-4">{{ __('Aucun profil de chercheur n\'a été trouvé.') }}</p>
-                <a href="{{ route('admin.researchers.create') }}" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium shadow-sm transition ease-in-out duration-150">
-                    {{ __('Ajouter le premier chercheur') }}
-                </a>
-            @endif
-        </div>
+                @endcan
+            </div>
+        @endif
     </div>
+</div>
 @endsection

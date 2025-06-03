@@ -5,19 +5,23 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+// Ne pas importer App\Traits\HasLocalizedFields si 'name' n'est pas le seul champ à traduire et qu'il ne l'est pas
+// Si d'autres champs étaient traduits (ex: description de la catégorie), alors on le garderait.
 
 class NewsCategory extends Model
 {
-    use HasFactory;
+    use HasFactory; // Ne pas utiliser HasLocalizedFields si 'name' n'est pas traduit
 
     protected $fillable = [
-        'name', // 'name' est directement fillable
+        'name', // Champ 'name' simple, non traduit
         'slug',
         'is_active',
+        'color',      // Si vous avez ce champ
+        'text_color', // Si vous avez ce champ
     ];
 
-    // Définir les champs de base qui sont traduits
-    public array $localizedFields = ['name']; // <--- AJOUT IMPORTANT
+    // Supprimer la propriété $localizedFields si aucun champ n'est traduit
+    // public array $localizedFields = []; 
 
     protected $casts = [
         'is_active' => 'boolean',
@@ -25,10 +29,10 @@ class NewsCategory extends Model
 
     public function newsItems(): HasMany
     {
-        return $this->hasMany(News::class, 'news_category_id', 'id'); // Utiliser News::class
+        // Utiliser le nom de modèle News.php consolidé
+        return $this->hasMany(News::class, 'news_category_id', 'id');
     }
-
-    // getRouteKeyName pour utiliser le slug dans les routes est une bonne pratique
+    
     public function getRouteKeyName()
     {
         return 'slug';

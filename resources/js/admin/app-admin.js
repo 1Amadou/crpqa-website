@@ -13,7 +13,30 @@
 // @import url('/assets/tinymce/skins/ui/oxide-dark/skin.min.css');
 // @import url('/assets/tinymce/skins/content/dark/content.min.css');
 
+import 'flowbite'; 
+// ou une initialisation plus spécifique si nécessaire
+// import { initFlowbite } from 'flowbite';
+// initFlowbite();
 
+document.addEventListener('DOMContentLoaded', function() {
+    const menuToggleButtons = document.querySelectorAll('[data-menu-toggle]');
+
+    menuToggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-menu-toggle');
+            const targetDropdown = document.getElementById(targetId);
+            const arrowIcon = this.querySelector('svg'); // Cible l'icône flèche
+
+            if (targetDropdown) {
+                const isExpanded = targetDropdown.classList.toggle('hidden');
+                this.setAttribute('aria-expanded', !isExpanded);
+                if (arrowIcon) {
+                    arrowIcon.classList.toggle('rotate-180', !isExpanded);
+                }
+            }
+        });
+    });
+});
 // -----------------------------------------------------------------------------
 // Fonction utilitaire : Convertir du texte en slug compatible URL
 function slugify(text) {

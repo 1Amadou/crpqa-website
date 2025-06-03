@@ -1,196 +1,244 @@
 @extends('layouts.admin')
 
+@php
+    $primaryLocale = $availableLocales[0] ?? app()->getLocale() ?? config('app.fallback_locale', 'fr');
+@endphp
+
+@section('title', __('Détails de l\'Événement') . ': ' . $event->getTranslation('title', $primaryLocale, false))
+
 @section('header')
-    <div class="flex flex-wrap justify-between items-start gap-2">
+    <div class="flex flex-wrap justify-between items-start gap-4">
         <div>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Détails de l\'événement') }}
-            </h2>
-            <p class="text-sm text-gray-600 mt-1">{{ Str::limit($event->title, 80) }}</p>
+            <h1 class="text-2xl font-semibold text-gray-800 dark:text-white leading-tight">
+                {{ __('Détails de l\'Événement') }}
+            </h1>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ Str::limit($event->getTranslation('title', $primaryLocale, false), 70) }}</p>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <a href="{{ route('admin.events.index') }}" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm font-medium shadow-sm transition ease-in-out duration-150">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
+        <div class="flex flex-wrap items-center gap-2">
+            @can('manage event_registrations')
+            <a href="{{ route('admin.events.registrations.index', $event->id) }}" class="inline-flex items-center px-4 py-2 bg-cyan-600 text-white text-sm font-medium rounded-md hover:bg-cyan-700 shadow-sm transition ease-in-out duration-150">
+                <x-heroicon-o-users class="h-4 w-4 mr-1.5"/>
+                {{ __('Inscriptions') }} ({{ $event->registrations_count ?? $event->registrations()->count() }})
+            </a>
+            @endcan
+            @can('manage events')
+            <a href="{{ route('admin.events.edit', $event) }}" class="inline-flex items-center px-4 py-2 bg-sky-600 text-white text-sm font-medium rounded-md hover:bg-sky-700 shadow-sm transition ease-in-out duration-150">
+                <x-heroicon-o-pencil-square class="h-4 w-4 mr-1.5"/>
+                {{ __('Modifier') }}
+            </a>
+            @endcan
+            <a href="{{ route('admin.events.index') }}" class="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white underline ml-2">
                 {{ __('Retour à la liste') }}
-            </a>
-            <a href="{{ route('admin.events.registrations.index', $event) }}" class="px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 text-sm font-medium shadow-sm transition ease-in-out duration-150">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block -mt-0.5" viewBox="0 0 20 20" fill="currentColor" style="margin-right: 4px;">
-                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                </svg>
-                {{ __('Gérer les Inscriptions') }} ({{ $event->registrations()->count() }}) {{-- Affiche le nombre d'inscriptions --}}
-            </a>
-            <a href="{{ route('admin.events.edit', $event) }}" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium shadow-sm transition ease-in-out duration-150">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block -mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
-                {{ __('Modifier cet événement') }}
             </a>
         </div>
     </div>
 @endsection
 
 @section('content')
-    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-        <div class="p-6 md:p-8 border-b border-gray-200">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
-                {{-- Colonne Informations Principales --}}
-                <div class="md:col-span-2 space-y-6">
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900">{{ __('Titre') }}</h3>
-                        <p class="mt-1 text-md text-gray-700">{{ $event->title }}</p>
-                    </div>
+<div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+    <div class="p-6 md:p-8">
 
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900">{{ __('Description') }}</h3>
-                        <div class="mt-1 prose max-w-none text-gray-700">
-                            {!! nl2br(e($event->description)) !!} {{-- nl2br pour les sauts de ligne, e() pour échapper --}}
-                            {{-- Plus tard, si la description est stockée en HTML (via un éditeur riche), ce sera juste {!! $event->description !!} (avec prudence et purification si nécessaire) --}}
-                        </div>
-                    </div>
-                    @if($event->target_audience)
-                    <div class="mt-6 pt-6 border-t border-gray-200">
-                        <h3 class="text-sm font-medium text-gray-500">{{ __('Publics Cibles') }}</h3>
-                        <div class="mt-1 prose max-w-none text-gray-700">
-                            {!! nl2br(e($event->target_audience)) !!}
-                        </div>
-                    </div>
-                    @endif  
+        @if($event->cover_image_url) {{-- Utilisation de l'accesseur du modèle --}}
+            <div class="mb-6 rounded-lg overflow-hidden shadow-lg max-h-96 flex justify-center bg-gray-100 dark:bg-gray-700">
+                <img src="{{ $event->cover_image_url }}" 
+                     alt="{{ $event->getTranslation('cover_image_alt', $primaryLocale, false) ?: $event->getTranslation('title', $primaryLocale, false) }}"
+                     class="w-auto h-full max-h-96 object-contain">
+            </div>
+        @endif
 
-                    @if($event->associatedPartners->isNotEmpty())
-<div class="mt-6 pt-6 border-t border-gray-200">
-    <h3 class="text-sm font-medium text-gray-500">{{ __('Partenaires Associés') }}</h3>
-    <ul class="mt-2 list-disc list-inside text-sm text-gray-700">
-        @foreach($event->associatedPartners as $partner)
-            <li>
-                <a href="{{ route('admin.partners.show', $partner) }}" class="text-blue-600 hover:underline">
-                    {{ $partner->name }}
-                </a>
-            </li>
-        @endforeach
-    </ul>
-</div>
-@endif
+        {{-- Système d'onglets pour la localisation --}}
+        <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="languageTabsEventShow" role="tablist">
+                @foreach($availableLocales as $locale)
+                    <li class="mr-2" role="presentation">
+                        <button class="inline-block p-4 border-b-2 rounded-t-lg {{ $loop->first ? 'border-primary-500 text-primary-600 dark:text-primary-500 dark:border-primary-500 active' : 'border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300' }}"
+                                id="tab-event-show-{{ $locale }}"
+                                data-tabs-target="#content-event-show-{{ $locale }}"
+                                type="button" role="tab" aria-controls="content-event-show-{{ $locale }}"
+                                aria-selected="{{ $loop->first ? 'true' : 'false' }}">
+                            {{ strtoupper($locale) }}
+                        </button>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
 
-                    <div class="mt-6 pt-6 border-t border-gray-200">
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900">{{ __('Dates et Horaires') }}</h3>
-                        <p class="mt-1 text-md text-gray-700">
-                            <strong>Début :</strong> {{ \Carbon\Carbon::parse($event->start_datetime)->format('d/m/Y \à H:i') }}
+        <div id="languageTabContentEventShow">
+            @foreach($availableLocales as $locale)
+                <div class="{{ $loop->first ? '' : 'hidden' }} p-1 mb-6" id="content-event-show-{{ $locale }}" role="tabpanel" aria-labelledby="tab-event-show-{{ $locale }}">
+                    
+                    <h3 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1 break-words leading-tight">
+                        {{ $event->getTranslation('title', $locale, false) }}
+                    </h3>
+
+                    @if($event->getTranslation('location', $locale, false))
+                        <p class="text-md text-gray-600 dark:text-gray-400 mb-4">
+                            <x-heroicon-o-map-pin class="h-5 w-5 inline-block mr-1 align-text-bottom"/>
+                            {{ $event->getTranslation('location', $locale, false) }}
                         </p>
+                    @endif
+                    
+                    @if($event->getTranslation('description', $locale, false))
+                        <div class="mt-4">
+                            <h4 class="sr-only">{{ __('Description') }}</h4>
+                            <div class="prose prose-lg dark:prose-invert max-w-none text-gray-800 dark:text-gray-100 content-styles">
+                                {!! $event->getTranslation('description', $locale, false) !!} {{-- Si HTML de WYSIWYG --}}
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($event->getTranslation('target_audience', $locale, false))
+                    <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1">{{ __('Public Cible') }}:</h4>
+                        <div class="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-200">{!! nl2br(e($event->getTranslation('target_audience', $locale, false))) !!}</div>
+                    </div>
+                    @endif
+
+                    @if($event->getTranslation('meta_title', $locale, false) && $event->getTranslation('meta_title', $locale, false) !== $event->getTranslation('title', $locale, false))
+                        <div class="mt-4 pt-2 border-t border-gray-100 dark:border-gray-700">
+                            <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1">{{ __('Meta Titre (SEO)') }}:</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 italic">{{ $event->getTranslation('meta_title', $locale, false) }}</p>
+                        </div>
+                    @endif
+
+                    @if($event->getTranslation('meta_description', $locale, false))
+                        <div class="mt-2 pt-2 @if(!($event->getTranslation('meta_title', $locale, false) && $event->getTranslation('meta_title', $locale, false) !== $event->getTranslation('title', $locale, false))) border-t border-gray-100 dark:border-gray-700 @endif">
+                            <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1">{{ __('Meta Description (SEO)') }}:</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 italic">{{ $event->getTranslation('meta_description', $locale, false) }}</p>
+                        </div>
+                    @endif
+
+                    @if($event->cover_image_url && $event->getTranslation('cover_image_alt', $locale, false))
+                        <div class="mt-2 pt-2 @if(!($event->getTranslation('meta_description', $locale, false))) border-t border-gray-100 dark:border-gray-700 @endif">
+                            <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1">{{ __('Texte Alternatif de l\'Image de Couverture') }}:</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 italic">{{ $event->getTranslation('cover_image_alt', $locale, false) }}</p>
+                        </div>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">{{__('Informations Complémentaires')}}</h3>
+            <dl class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+                <div class="flex flex-col">
+                    <dt class="font-semibold text-gray-600 dark:text-gray-300">{{ __('Dates') }}:</dt>
+                    <dd class="text-gray-700 dark:text-gray-200">
+                        {{ $event->start_datetime->translatedFormat('d M Y, H:i') }}
                         @if($event->end_datetime)
-                        <p class="mt-1 text-md text-gray-700">
-                            <strong>Fin :</strong> {{ \Carbon\Carbon::parse($event->end_datetime)->format('d/m/Y \à H:i') }}
-                        </p>
+                            - {{ $event->end_datetime->translatedFormat('d M Y, H:i') }}
                         @endif
-                    </div>
-
-                    @if($event->location)
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900">{{ __('Lieu') }}</h3>
-                        <p class="mt-1 text-md text-gray-700">{{ $event->location }}</p>
-                    </div>
-                    @endif
-
-                    @if($event->registration_url)
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900">{{ __('Lien d\'inscription') }}</h3>
-                        <p class="mt-1 text-md text-blue-600 hover:text-blue-800">
-                            <a href="{{ $event->registration_url }}" target="_blank" rel="noopener noreferrer">{{ $event->registration_url }}</a>
-                        </p>
-                    </div>
-                    @endif
+                    </dd>
                 </div>
-
-                {{-- Colonne Informations Secondaires et Méta --}}
-                <div class="md:col-span-1 space-y-6">
-                    @if($event->cover_image_path && Storage::disk('public')->exists($event->cover_image_path))
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-1">{{ __('Image de couverture') }}</h3>
-                        <img src="{{ Storage::url($event->cover_image_path) }}" alt="Image de couverture pour {{ $event->title }}" class="w-full h-auto object-cover rounded-md shadow-md">
-                    </div>
-                    @endif
-
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900">{{ __('Statut') }}</h3>
-                         @php
-                            $now = now();
-                            $start_datetime = \Carbon\Carbon::parse($event->start_datetime);
-                            $end_datetime = $event->end_datetime ? \Carbon\Carbon::parse($event->end_datetime) : null;
-                            $status_text = '';
-                            $status_class = '';
-
-                            if ($start_datetime->isFuture()) {
-                                $status_text = 'À venir';
-                                $status_class = 'bg-blue-100 text-blue-800';
-                            } elseif ($end_datetime && $end_datetime->isPast()) {
-                                $status_text = 'Passé';
-                                $status_class = 'bg-gray-100 text-gray-800';
-                            } elseif ($start_datetime->isPast() && (!$end_datetime || $end_datetime->isFuture() || $end_datetime->isToday())) {
-                                $status_text = 'En cours';
-                                $status_class = 'bg-yellow-100 text-yellow-800';
-                            } else {
-                                $status_text = 'Actif'; // Cas par défaut ou si seulement start_datetime est aujourd'hui et pas d'heure de fin
-                                $status_class = 'bg-green-100 text-green-800';
-                                if ($end_datetime && $end_datetime->isPast()){
-                                     $status_text = 'Passé';
-                                     $status_class = 'bg-gray-100 text-gray-800';
-                                }
-                            }
+                <div class="flex flex-col">
+                    <dt class="font-semibold text-gray-600 dark:text-gray-300">{{ __('Organisateur') }}:</dt>
+                    <dd class="text-gray-700 dark:text-gray-200">{{ $event->createdBy->name ?? __('N/A') }}</dd>
+                </div>
+                <div class="flex flex-col">
+                    <dt class="font-semibold text-gray-600 dark:text-gray-300">{{ __('Statut') }}:</dt>
+                    <dd>
+                        @php /* Logique de statut copiée de index.blade.php, peut être mise dans un accesseur sur le modèle Event */
+                            $now = now(); $start_datetime = $event->start_datetime; $end_datetime = $event->end_datetime;
+                            $status_text = ''; $status_class = '';
+                            if ($start_datetime->isFuture()) { $status_text = __('À venir'); $status_class = 'bg-sky-100 text-sky-800 dark:bg-sky-700 dark:text-sky-100'; }
+                            elseif ($end_datetime && $end_datetime->isPast()) { $status_text = __('Passé'); $status_class = 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200'; }
+                            elseif ($start_datetime->isPast() && (!$end_datetime || $end_datetime->isFuture() || $end_datetime->isToday())) { $status_text = __('En cours'); $status_class = 'bg-amber-100 text-amber-800 dark:bg-amber-600 dark:text-amber-100'; }
+                            else { $status_text = __('Actif'); $status_class = 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100'; if ($end_datetime && $end_datetime->isPast()){ $status_text = __('Passé'); $status_class = 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200'; }}
                         @endphp
-                        <p class="mt-1">
-                            <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full {{ $status_class }}">
-                                {{ $status_text }}
-                            </span>
-                        </p>
-                    </div>
-
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900">{{ __('Mise en vedette') }}</h3>
-                        <p class="mt-1 text-md text-gray-700">
-                            @if($event->is_featured)
-                                <span class="text-green-600 font-semibold">Oui</span> (⭐ Apparaît en évidence)
-                            @else
-                                Non
-                            @endif
-                        </p>
-                    </div>
-
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900">{{ __('Organisateur') }}</h3>
-                        <p class="mt-1 text-md text-gray-700">{{ $event->user->name ?? 'Non spécifié' }}</p>
-                    </div>
-
-                    <hr class="my-4">
-
-                    <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ __('Informations SEO') }}</h3>
-                    <div>
-                        <h4 class="text-md font-medium text-gray-800">{{ __('Méta Titre') }}</h4>
-                        <p class="mt-1 text-sm text-gray-600">{{ $event->meta_title ?: '(Non défini - le titre principal sera utilisé)' }}</p>
-                    </div>
-                    <div class="mt-3">
-                        <h4 class="text-md font-medium text-gray-800">{{ __('Méta Description') }}</h4>
-                        <p class="mt-1 text-sm text-gray-600">{{ $event->meta_description ?: '(Non définie - un extrait sera généré)' }}</p>
-                    </div>
-                     <div class="mt-3">
-                        <h4 class="text-md font-medium text-gray-800">{{ __('Slug (URL)') }}</h4>
-                        <p class="mt-1 text-sm text-gray-600 break-all">{{ $event->slug }}</p>
-                    </div>
+                        <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full {{ $status_class }}">
+                            {{ $status_text }}
+                        </span>
+                    </dd>
                 </div>
-            </div>
+                <div class="flex flex-col">
+                    <dt class="font-semibold text-gray-600 dark:text-gray-300">{{ __('En Vedette') }}:</dt>
+                    <dd class="{{ $event->is_featured ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-gray-700 dark:text-gray-200' }}">
+                        {{ $event->is_featured ? __('Oui') : __('Non') }}
+                    </dd>
+                </div>
+                @if($event->registration_url)
+                <div class="flex flex-col md:col-span-2">
+                    <dt class="font-semibold text-gray-600 dark:text-gray-300">{{ __('Lien d\'inscription') }}:</dt>
+                    <dd class="text-primary-600 dark:text-primary-400 hover:underline break-all"><a href="{{ $event->registration_url }}" target="_blank" rel="noopener noreferrer">{{ $event->registration_url }}</a></dd>
+                </div>
+                @endif
+                <div class="flex flex-col">
+                    <dt class="font-semibold text-gray-600 dark:text-gray-300">Slug :</dt>
+                    <dd class="font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-xs text-gray-700 dark:text-gray-200 inline-block">{{ $event->slug }}</dd>
+                </div>
+            </dl>
 
-            <div class="pt-8 mt-8 border-t border-gray-200 flex flex-wrap justify-start gap-3">
-                 <form action="{{ route('admin.events.destroy', $event) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet événement : \'{{ addslashes(Str::limit($event->title, 30)) }}\' ? Cette action est irréversible.');">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium shadow-sm transition ease-in-out duration-150">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block -mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                        </svg>
-                        {{ __('Supprimer cet événement') }}
-                    </button>
-                </form>
-            </div>
+            @if($event->partners->isNotEmpty())
+                <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <h4 class="text-md font-semibold text-gray-700 dark:text-gray-200 mb-2">{{ __('Partenaires Associés') }}</h4>
+                    <ul class="list-disc list-inside text-sm text-gray-600 dark:text-gray-300">
+                        @foreach($event->partners as $partner)
+                            <li>
+                                @can('view partners') {{-- Supposant une permission pour voir les partenaires --}}
+                                <a href="{{ route('admin.partners.show', $partner) }}" class="hover:text-primary-600 dark:hover:text-primary-400 hover:underline">
+                                    {{ $partner->name }} {{-- Supposant que Partner a un champ 'name' (et potentiellement traduit) --}}
+                                </a>
+                                @else
+                                {{ $partner->name }}
+                                @endcan
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
+            <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                <p>{{ __('Événement créé par') }} {{ $event->createdBy->name ?? __('N/A') }} {{ __('le') }} : {{ $event->created_at->translatedFormat('d F Y à H:i') }}</p>
+                <p>{{ __('Dernière mise à jour') }} : {{ $event->updated_at->translatedFormat('d F Y à H:i') }}</p>
+            </div>
+        </div>
+        
+        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600 flex flex-wrap justify-start gap-3">
+            @can('manage events')
+            <form action="{{ route('admin.events.destroy', $event) }}" method="POST" onsubmit="return confirm('{{ __('Êtes-vous sûr de vouloir supprimer cet événement :name ? Ceci est irréversible et supprimera aussi les inscriptions liées.', ['name' => addslashes($event->getTranslation('title', $primaryLocale, false))]) }}');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 shadow-sm transition ease-in-out duration-150">
+                    <x-heroicon-o-trash class="h-4 w-4 mr-1.5"/>
+                    {{ __('Supprimer cet Événement') }}
+                </button>
+            </form>
+            @endcan
         </div>
     </div>
+</div>
 @endsection
+
+@push('scripts')
+{{-- Réutilisation du script d'onglets --}}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tabButtonsEventShow = document.querySelectorAll('#languageTabsEventShow button');
+    const tabContentsEventShow = document.querySelectorAll('#languageTabContentEventShow > div');
+
+    tabButtonsEventShow.forEach((button) => {
+        button.addEventListener('click', () => {
+            tabButtonsEventShow.forEach(btn => {
+                btn.classList.remove('border-primary-500', 'text-primary-600', 'dark:text-primary-500', 'dark:border-primary-500', 'active');
+                btn.classList.add('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'dark:hover:text-gray-300');
+                btn.setAttribute('aria-selected', 'false');
+            });
+            tabContentsEventShow.forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            button.classList.add('border-primary-500', 'text-primary-600', 'dark:text-primary-500', 'dark:border-primary-500', 'active');
+            button.classList.remove('border-transparent');
+            button.setAttribute('aria-selected', 'true');
+            const target = document.querySelector(button.dataset.tabsTarget);
+            if (target) {
+                target.classList.remove('hidden');
+            }
+        });
+    });
+    if (tabButtonsEventShow.length > 0 && !document.querySelector('#languageTabsEventShow button.active')) {
+         if (tabButtonsEventShow[0]) tabButtonsEventShow[0].click();
+    }
+});
+</script>
+@endpush

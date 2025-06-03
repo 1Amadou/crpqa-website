@@ -21,8 +21,8 @@ class NewsController extends Controller
     public function __construct()
     {
         // Assurez-vous que cette permission est définie dans votre système de rôles/permissions
-        $this->middleware(['permission:manage news'])->except(['show']); 
-        $this->middleware(['permission:view news'])->only(['show']); // Exemple si vous avez une permission distincte pour voir
+        // $this->middleware(['permission:manage news'])->except(['show']); 
+        // $this->middleware(['permission:view news'])->only(['show']); // Exemple si vous avez une permission distincte pour voir
         $this->availableLocales = config('app.available_locales', ['fr', 'en']);
     }
 
@@ -76,6 +76,8 @@ class NewsController extends Controller
             'published_at' => now(),
         ]);
         $categories = NewsCategory::orderBy('name')->get()->pluck('name', 'id');
+        $primaryLocale = app()->getLocale(); // Ou votre logique pour la locale de tri
+        // $categories = NewsCategory::orderBy('name_' . $primaryLocale)->get()->pluck('name', 'id');
 
         return view('admin.news.create', compact('availableLocales', 'newsItem', 'categories'));
     }
@@ -145,6 +147,8 @@ class NewsController extends Controller
         $newsItem->load('media'); // Charger les médias pour l'affichage/suppression
         $availableLocales = $this->availableLocales;
         $categories = NewsCategory::orderBy('name')->get()->pluck('name', 'id');
+        $primaryLocale = app()->getLocale(); 
+        $categories = NewsCategory::orderBy('name_' . $primaryLocale)->get()->pluck('name', 'id');
 
         return view('admin.news.edit', compact('newsItem', 'availableLocales', 'categories'));
     }

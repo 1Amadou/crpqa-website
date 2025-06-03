@@ -95,20 +95,20 @@
             @error('slug') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
-        <div>
-            <label for="news_category_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Catégorie') }}</label>
-            <select name="news_category_id" id="news_category_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-                <option value="">{{ __('-- Aucune catégorie --') }}</option>
-                @if(isset($categories))
-                    @foreach($categories as $id => $name)
-                        <option value="{{ $id }}" {{ old('news_category_id', $newsItem->news_category_id) == $id ? 'selected' : '' }}>
-                            {{ $name }} {{-- Le nom est déjà traduit par le contrôleur --}}
-                        </option>
-                    @endforeach
-                @endif
-            </select>
-            @error('news_category_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-        </div>
+        <div class="mb-4">
+        <label for="news_category_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Catégorie') }}</label>
+        <select name="news_category_id" id="news_category_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+            <option value="">{{ __('-- Aucune catégorie --') }}</option>
+            @if(isset($categories)) {{-- Vérifier que la variable existe --}}
+                @foreach($categories as $id => $name)
+                    <option value="{{ $id }}" {{ old('news_category_id', $newsItem->news_category_id) == $id ? 'selected' : '' }}>
+                        {{ $name }} {{-- Le nom devrait être traduit ici si pluck utilise l'accesseur du modèle --}}
+                    </option>
+                @endforeach
+            @endif
+        </select>
+        @error('news_category_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 mt-4">
