@@ -85,9 +85,9 @@ return [
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
     // config/app.php
-'available_locales' => ['fr', 'en'],
-'locale' => 'fr', // Langue par défaut
-'fallback_locale' => 'en', // Langue de secours
+    'available_locales' => ['fr', 'en'],
+    'locale' => 'fr', // Langue par défaut
+    'fallback_locale' => 'en', // Langue de secours
 
     /*
     |--------------------------------------------------------------------------
@@ -127,5 +127,7 @@ return [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
+
+    
 
 ];

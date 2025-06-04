@@ -2,49 +2,87 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Partner; // Assurez-vous que le modèle Partner est bien ici
+use App\Models\Partner;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str; // Pour Str::limit si utilisé
+use Illuminate\Support\Str;
 
 class PublicPartnerController extends Controller
 {
     /**
-     * Affiche la liste des partenaires actifs.
+     * Display a listing of the active partners.
      */
-    public function index()
+    public function index(Request $request)
     {
         $primaryLocale = app()->getLocale();
-        $partners = Partner::where('is_active', true)
-                           ->orderBy('display_order', 'asc')
-                           ->orderBy('name_' . $primaryLocale, 'asc') // Tri par nom localisé
-                           ->paginate(15); // Ou ->get() si vous ne voulez pas de pagination
+        $searchTerm = $request->input('search');
+        $typeFilter = $request->input('type'); // Pour un éventuel filtre par type
 
-        // Vous pourriez vouloir grouper par type ici si votre vue index le gère
-        // Exemple: $groupedPartners = $partners->groupBy('type');
+        $query = Partner::where('is_active', true)
+                        ->orderBy('display_order', 'asc')
+                        ->orderBy('name_' . $primaryLocale, 'asc') // Tri par nom localisé
+                        ->with('media'); // Eager load le logo
 
-        return view('public.partners.index', compact('partners'));
+        if ($searchTerm) {
+            $query->where(function ($q) use ($searchTerm, $primaryLocale) {
+                $q->where('name_' . $primaryLocale, 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('description_' . $primaryLocale, 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('type', 'LIKE', "%{$searchTerm}%"); // Si type est un champ texte simple
+            });
+        }
+
+        if ($typeFilter) {
+            $query->where('type', $typeFilter);
+        }
+        
+        $partners = $query->paginate(12)->appends($request->query()); // 12 partenaires par page par exemple
+
+        // Pour le filtre par type, si vous voulez une liste des types existants
+        $partnerTypes = Partner::where('is_active', true)
+                                ->select('type')
+                                ->distinct()
+                                ->orderBy('type')
+                                ->pluck('type')
+                                ->filter() // Enlever les valeurs nulles ou vides
+                                ->mapWithKeys(function($type){
+                                    return [$type => __(Str::title(str_replace('_', ' ', $type)))]; // Traduire les types
+                                });
+
+
+        $pageTitle = __('Nos Partenaires');
+        if($searchTerm){
+            $pageTitle = __('Résultats de recherche pour :term parmi nos partenaires', ['term' => $searchTerm]);
+        } elseif($typeFilter){
+             $pageTitle = __('Partenaires de type : ') . ($partnerTypes[$typeFilter] ?? Str::title($typeFilter));
+        }
+
+
+        return view('public.partners.index', compact(
+            'partners', 
+            'pageTitle', 
+            'searchTerm', 
+            'typeFilter',
+            'partnerTypes'
+        ));
     }
 
     /**
-     * Affiche un partenaire spécifique par son slug (si vous avez une page de détail).
-     * Assurez-vous que votre modèle Partner utilise getRouteKeyName() pour retourner 'slug'
-     * et que la table 'partners' a une colonne 'slug' unique.
+     * Display the specified partner.
+     * (Optionnel, si vous avez une page de détail pour les partenaires)
      */
-    public function show(Partner $partner) // Utilisation du Route Model Binding (nécessite un champ slug)
-    {
-        if (!$partner->is_active) {
-            abort(404); // Ne pas montrer les partenaires inactifs
-        }
+    // public function show(Partner $partner) // Route Model Binding par slug si vous ajoutez un slug
+    // {
+    //     if (!$partner->is_active && !(auth()->check() && auth()->user()->can('preview inactive content'))) {
+    //         abort(404);
+    //     }
+    //     $partner->load('media'); // Charger le logo
+    //     // $partner->load('events'); // Si vous voulez lister les événements en collaboration
 
-        // Charger les relations nécessaires si vous en avez (ex: événements associés)
-        // $partner->load('events');
+    //     $siteSettings = app('siteSettings');
+    //     $metaTitle = $partner->name . ' - ' . __('Partenaire');
+    //     $metaDescription = Str::limit(strip_tags($partner->description), 160);
+    //     $ogImage = $partner->logo_url ?: ($siteSettings->default_og_image_url ?? null);
 
-        // Pour les méta-données SEO
-        // Le trait HasLocalizedFields devrait gérer l'affichage de $partner->name et $partner->description
-        // dans la langue courante directement dans la vue.
-        $metaTitle = $partner->getTranslation('name', app()->getLocale(), false);
-        $metaDescription = Str::limit(strip_tags($partner->getTranslation('description', app()->getLocale(), false)), 160);
 
-        return view('public.partners.show', compact('partner', 'metaTitle', 'metaDescription'));
-    }
+    //     return view('public.partners.show', compact('partner', 'metaTitle', 'metaDescription', 'ogImage'));
+    // }
 }

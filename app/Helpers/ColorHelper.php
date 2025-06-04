@@ -1,20 +1,35 @@
 <?php
+
+
 namespace App\Helpers;
-class ColorHelper {
-    public static function isLightColor(string $hexColor): bool {
-        // Logique pour déterminer si la couleur est claire
-        if (empty($hexColor)) {
-            return false; // Assure un retour booléen même en cas d'erreur
+
+class ColorHelper
+{
+    /**
+     * Convertit un code hexadécimal en rgba.
+     *
+     * @param string $hexColor Le code hexadécimal de la couleur.
+     * @param float $alpha Le niveau de transparence (0 à 1).
+     * @return string Code rgba correspondant.
+     */
+    public static function hexToRgba(string $hexColor, float $alpha = 1): string
+    {
+        // Supprimer le # s'il est présent
+        $hexColor = ltrim($hexColor, '#');
+
+        // Vérifier si la couleur est valide (3 ou 6 caractères hexadécimaux)
+        if (!preg_match('/^[0-9A-Fa-f]{3,6}$/', $hexColor)) {
+            return "rgba(0,0,0,{$alpha})"; // Valeur par défaut en cas d'erreur
         }
-    
-        // Exemple de logique (à adapter selon ton besoin)
-        $r = hexdec(substr($hexColor, 0, 2));
-        $g = hexdec(substr($hexColor, 2, 2));
-        $b = hexdec(substr($hexColor, 4, 2));
-    
-        $brightness = ($r * 299 + $g * 587 + $b * 114) / 1000;
-    
-        return $brightness > 128; // Retourne true si la couleur est claire, sinon false
+
+        // Si la couleur est sous format réduit (ex: "FFF"), l'étendre
+        if (strlen($hexColor) === 3) {
+            $hexColor = preg_replace('/(.)/', '$1$1', $hexColor);
+        }
+
+        // Conversion en RGB
+        list($r, $g, $b) = sscanf($hexColor, "%02x%02x%02x");
+
+        return "rgba({$r}, {$g}, {$b}, {$alpha})";
     }
-    
 }

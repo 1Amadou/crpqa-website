@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'recaptcha' => [
+    'key' => env('NOCAPTCHA_SITEKEY'),
+    'secret' => env('NOCAPTCHA_SECRET'),
+    // Pour v3, si vous utilisez un package qui le supporte spécifiquement ou si vous l'implémentez manuellement
+    'v3_site_key' => env('RECAPTCHAV3_SITEKEY'),
+    'v3_secret_key' => env('RECAPTCHAV3_SECRET'),
+],
+
 ];

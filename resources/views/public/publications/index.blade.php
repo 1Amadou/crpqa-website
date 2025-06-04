@@ -1,95 +1,159 @@
 @extends('layouts.public')
 
-@section('title', __('Publications') . ' - ' . ($siteSettings->site_name ?? config('app.name')))
-@section('meta_description', __('Découvrez les dernières recherches et publications scientifiques du CRPQA.'))
+@section('title', __('Nos Publications Scientifiques') . ' - ' . ($siteSettings->site_name_short ?: $siteSettings->site_name ?: config('app.name')))
+@section('meta_description', __('Découvrez les travaux de recherche et les publications scientifiques du CRPQA et de ses chercheurs.'))
+
+@push('styles')
+<style>
+    /* Styles repris de home.blade.php, à déplacer dans un CSS global */
+    .section-card { background-color: var(--card-bg-color, white); color: var(--card-text-color, inherit); border-radius: var(--radius-lg, 0.75rem); box-shadow: var(--shadow-lg); transition: all 0.3s ease-in-out; overflow: hidden; display: flex; flex-direction: column; }
+    .dark .section-card { background-color: var(--dark-card-bg-color, #374151); color: var(--dark-text-color, #d1d5db); }
+    .section-card:hover { box-shadow: var(--shadow-2xl); transform: translateY(-6px); }
+    .section-card__image-link { display: block; aspect-ratio: 16 / 10; overflow: hidden; }
+    .section-card__image { width: 100%; height: 100%; object-fit: cover; }
+    .section-card__content { padding: 1.25rem; flex-grow: 1; display: flex; flex-direction: column; }
+    .section-card__meta { font-size: 0.75rem; color: var(--text-color-light, #6b7280); margin-bottom: 0.5rem; display: flex; flex-wrap: wrap; gap-x: 0.75rem; gap-y: 0.25rem; align-items: center;}
+    .dark .section-card__meta { color: var(--dark-text-color-light, #9ca3af); }
+    .section-card__title { font-size: 1.125rem; font-semibold; line-height: 1.4; margin-bottom: 0.5rem; }
+    .section-card__title a { color: var(--title-color, #1f2937); text-decoration: none; }
+    .dark .section-card__title a { color: var(--dark-title-color, #f3f4f6); }
+    .section-card__title a:hover { color: rgb(var(--color-primary)); }
+    .section-card__description { font-size: 0.875rem; line-height: 1.625; margin-bottom: 1rem; flex-grow: 1; }
+    .section-card__link { margin-top: auto; display: inline-flex; align-items: center; font-size: 0.875rem; font-semibold; color: rgb(var(--color-primary)); text-decoration:none; }
+    .section-card__link ion-icon, .section-card__link svg { margin-left: 0.25rem; width: 1em; height: 1em; }
+    .publication-filters select, .publication-filters input[type="text"] { /* Styles pour les filtres */ }
+</style>
+@endpush
 
 @section('content')
 <div class="bg-slate-50 dark:bg-gray-900">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        <header class="mb-10 md:mb-12 text-center">
-            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 dark:text-white leading-tight">
-                {{ __('Nos Publications') }}
+    <section class="page-hero-section section--bg py-12 md:py-20 text-center" 
+             style="background-image: linear-gradient(rgba(var(--color-primary-dark-rgb,10,42,77),0.75), rgba(var(--color-secondary-dark-rgb,29,44,90),0.85)), url({{ $siteSettings->default_og_image_url ?: asset('assets/images/backgrounds/publications_hero_default.jpg') }});">
+        <div class="container">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-tight" data-aos="fade-up">
+                {{ __('Nos Publications Scientifiques') }}
             </h1>
-            <p class="mt-3 text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                {{ __('Explorez nos contributions à la recherche scientifique et aux avancées technologiques.') }}
-            </p>
-        </header>
+            <nav aria-label="breadcrumb" class="mt-3" data-aos="fade-up" data-aos-delay="100">
+                <ol class="breadcrumb text-sm">
+                    <li class="breadcrumb-item"><a href="{{ route('public.home') }}">{{ __('Accueil') }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">/ {{ __('Publications') }}</li>
+                </ol>
+            </nav>
+        </div>
+    </section>
 
-        @if($publications->count() > 0)
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
-                @foreach($publications as $publicationItem)
-                    <article class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col transition-all duration-300 ease-in-out hover:shadow-2xl group">
-                        {{-- Image de couverture (si vous en ajoutez une via Spatie Media Library) --}}
-                        {{-- @if($publicationItem->getFirstMediaUrl('publication_cover_image'))
-                            <a href="{{ route('public.publications.show', $publicationItem->slug) }}" class="block h-48 overflow-hidden">
-                                <img src="{{ $publicationItem->getFirstMediaUrl('publication_cover_image', 'card') }}" alt="{{ __('Image de couverture pour') }} {{ $publicationItem->title }}" class="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-105">
+    <section class="section publications-index-section">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            
+            {{-- Filtres --}}
+            <form action="{{ route('public.publications.index') }}" method="GET" class="mb-8 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md" data-aos="fade-up">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <label for="search" class="block text-xs font-medium text-gray-700 dark:text-gray-300">{{__('Rechercher (titre, résumé, mots-clés...)')}}</label>
+                        <input type="text" name="search" id="search" value="{{ $searchTerm ?? '' }}" class="mt-1 block w-full form-input-sm">
+                    </div>
+                    <div>
+                        <label for="type" class="block text-xs font-medium text-gray-700 dark:text-gray-300">{{__('Type de publication')}}</label>
+                        <select name="type" id="type" class="mt-1 block w-full form-select-sm">
+                            <option value="">{{__('Tous les types')}}</option>
+                            @foreach($types as $typeKey => $typeName)
+                                <option value="{{ $typeKey }}" {{ $typeFilter == $typeKey ? 'selected' : '' }}>{{ $typeName }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="year" class="block text-xs font-medium text-gray-700 dark:text-gray-300">{{__('Année de publication')}}</label>
+                        <select name="year" id="year" class="mt-1 block w-full form-select-sm">
+                            <option value="">{{__('Toutes les années')}}</option>
+                            @foreach($years as $yearOption)
+                                <option value="{{ $yearOption }}" {{ $yearFilter == $yearOption ? 'selected' : '' }}>{{ $yearOption }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                     <div>
+                        <label for="researcher" class="block text-xs font-medium text-gray-700 dark:text-gray-300">{{__('Chercheur')}}</label>
+                        <select name="researcher" id="researcher" class="mt-1 block w-full form-select-sm">
+                            <option value="">{{__('Tous les chercheurs')}}</option>
+                            @foreach($researchersForFilter as $id => $name)
+                                <option value="{{ $id }}" {{ $researcherFilter == $id ? 'selected' : '' }}>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2 md:col-span-1 flex space-x-2">
+                        <button type="submit" class="button button--primary w-full justify-center">
+                            <x-heroicon-o-funnel class="w-5 h-5 mr-2"/> {{__('Filtrer')}}
+                        </button>
+                         @if($searchTerm || $typeFilter || $yearFilter || $researcherFilter)
+                            <a href="{{ route('public.publications.index') }}" class="button button--outline w-full justify-center" title="{{__('Réinitialiser les filtres')}}">
+                                <x-heroicon-o-x-mark class="w-5 h-5"/>
                             </a>
-                        @endif --}}
-                        
-                        <div class="p-6 flex flex-col flex-grow">
-                            <header class="mb-3">
-                                <div class="text-xs text-gray-500 dark:text-gray-400">
-                                    <span class="font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
-                                        {{ $publicationItem->type_display ?? Str::title(str_replace('_', ' ', $publicationItem->type)) }}
-                                    </span>
-                                    <span class="mx-1.5">&bull;</span>
-                                    <time datetime="{{ $publicationItem->publication_date->toDateString() }}">
-                                        {{ $publicationItem->publication_date->translatedFormat('F Y') }}
-                                    </time>
-                                </div>
-                                <h2 class="mt-1 text-lg font-semibold leading-tight text-gray-800 dark:text-white">
-                                    <a href="{{ route('public.publications.show', $publicationItem->slug) }}" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200">
-                                        {{ $publicationItem->title }}
-                                    </a>
-                                </h2>
-                            </header>
+                        @endif
+                    </div>
+                </div>
+            </form>
 
-                            @if($publicationItem->researchers->isNotEmpty() || !empty($publicationItem->authors_external))
-                                <p class="text-xs text-gray-600 dark:text-gray-400 mb-3 leading-relaxed">
-                                    <strong class="font-medium">{{ __('Auteurs') }}:</strong>
-                                    @php
-                                        $authors = [];
-                                        if ($publicationItem->researchers->isNotEmpty()) {
-                                            $authors[] = $publicationItem->researchers->pluck('full_name')->join(', ');
-                                        }
-                                        if (!empty($publicationItem->authors_external)) {
-                                            $authors[] = e($publicationItem->authors_external);
-                                        }
-                                    @endphp
-                                    {!! implode(' ; ', $authors) !!}
-                                </p>
-                            @endif
-
-                            <div class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-4 flex-grow">
-                                {!! Str::limit(strip_tags($publicationItem->abstract), 180) !!}
-                            </div>
-
-                            <footer class="mt-auto">
-                                <a href="{{ route('public.publications.show', $publicationItem->slug) }}" 
-                                   class="inline-flex items-center text-sm font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 group">
-                                    {{ __('Lire la suite') }}
-                                    <svg class="ml-1.5 w-4 h-4 transform transition-transform duration-200 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            @if($publications->count() > 0)
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                    @foreach($publications as $index => $publication)
+                    <article class="section-card publication__card group" data-aos="fade-up" data-aos-delay="{{ ($index % 3 * 100) }}">
+                        <div class="section-card__content">
+                            <p class="section-card__meta publication__meta">
+                                <span>{{ $publication->type_display ?? Str::title(str_replace('_', ' ', $publication->type)) }}</span>
+                                @if($publication->publication_date)<span class="mx-1">&bull;</span> <time datetime="{{ $publication->publication_date->toDateString() }}">{{ $publication->publication_date->translatedFormat('M Y') }}</time>@endif
+                            </p>
+                            <h3 class="section-card__title text-lg publication__title">
+                                <a href="{{ route('public.publications.show', $publication->slug) }}">
+                                    {{ Str::limit($publication->title, 80) }}
                                 </a>
-                            </footer>
+                            </h3>
+                            @php
+                                $authorsDisplay = [];
+                                if ($publication->researchers->isNotEmpty()) { $authorsDisplay[] = $publication->researchers->take(2)->pluck('full_name')->join(', '); if($publication->researchers->count() > 2) $authorsDisplay[] = 'et al.';}
+                                if ($publication->authors_external) { $authorsDisplay[] = e(Str::limit($publication->authors_external, 40)); }
+                            @endphp
+                            @if(!empty($authorsDisplay))
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                               {{ implode('; ', $authorsDisplay) }}
+                            </p>
+                            @endif
+                            <p class="section-card__description publication__abstract">
+                                {{ Str::limit(strip_tags($publication->abstract), 150) }}
+                            </p>
+                            <div class="mt-auto pt-3">
+                                <a href="{{ $publication->doi_url ?: route('public.publications.show', $publication->slug) }}" 
+                                   target="{{ $publication->doi_url ? '_blank' : '_self' }}" rel="noopener noreferrer" 
+                                   class="section-card__link publication__link">
+                                    {{ $publication->doi_url ? __('Consulter sur DOI') : __('Lire la suite') }} <ion-icon name="open-outline"></ion-icon>
+                                </a>
+                                @if($publication->getFirstMediaUrl('publication_pdf'))
+                                <a href="{{ route('public.publications.download', $publication->slug) }}"  {{-- Assurez-vous que cette route existe --}}
+                                   class="section-card__link publication__link ml-4 text-sm text-gray-600 hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400" title="{{__('Télécharger le PDF')}}">
+                                    <x-heroicon-o-arrow-down-tray class="w-4 h-4 mr-1"/> PDF
+                                </a>
+                                @endif
+                            </div>
                         </div>
                     </article>
-                @endforeach
-            </div>
+                    @endforeach
+                </div>
 
-            <div class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
-                {{ $publications->links() }}
-            </div>
-        @else
-            <div class="text-center py-12">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                </svg>
-                <h3 class="mt-2 text-lg font-medium text-gray-800 dark:text-white">{{ __('Aucune publication') }}</h3>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    {{ __('Il n\'y a actuellement aucune publication à afficher. Revenez bientôt !') }}
-                </p>
-            </div>
-        @endif
-    </div>
+                <div class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
+                    {{ $publications->links() }}
+                </div>
+            @else
+                <div class="text-center py-12" data-aos="fade-up">
+                    <x-heroicon-o-document-text class="mx-auto h-12 w-12 text-gray-400"/>
+                    <h3 class="mt-2 text-lg font-medium text-gray-800 dark:text-white">
+                        {{ __('Aucune publication trouvée correspondant à vos critères.') }}
+                    </h3>
+                     @if($searchTerm || $typeFilter || $yearFilter || $researcherFilter)
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            <a href="{{ route('public.publications.index') }}" class="text-primary-600 hover:underline">{{__('Voir toutes les publications')}}</a>
+                        </p>
+                    @endif
+                </div>
+            @endif
+        </div>
+    </section>
 </div>
 @endsection

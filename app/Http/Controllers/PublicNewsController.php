@@ -2,132 +2,85 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\NewsCategory;
-use App\Models\News;
+use App\Models\News; // Assurez-vous que c'est le bon nom de modèle (News et non NewsItem)
+use App\Models\NewsCategory; // Si vous voulez permettre de filtrer par catégorie
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class PublicNewsController extends Controller
 {
     /**
-     * Affiche la liste paginée des actualités.
+     * Display a listing of the published news items.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\View\View
      */
     public function index(Request $request)
     {
-        $pageTitle = "Actualités du CRPQA";
+        $query = News::where('is_published', true)
+                     ->orderBy('published_at', 'desc');
 
-        $query = News::query()
-            ->where('is_published', true)
-            ->where('published_at', '<=', now());
-
-        if ($searchTerm = $request->input('search')) {
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('title_fr', 'like', "%{$searchTerm}%")
-                  ->orWhere('content_fr', 'like', "%{$searchTerm}%");
+        // Optionnel: Filtrage par catégorie si un slug de catégorie est passé en query string
+        if ($request->has('category') && $request->category) {
+            $category = NewsCategory::where('slug', $request->category)->first();
+            if ($category) {
+                $query->where('news_category_id', $category->id);
+                $categoryName = $category->name; // Sera traduit si NewsCategory utilise HasLocalizedFields
+            }
+        }
+        
+        // Optionnel: Recherche
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $currentLocale = app()->getLocale();
+            $query->where(function ($q) use ($searchTerm, $currentLocale) {
+                $q->where('title_' . $currentLocale, 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('summary_' . $currentLocale, 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('content_' . $currentLocale, 'LIKE', "%{$searchTerm}%");
             });
         }
 
-        if ($categorySlug = $request->input('category')) {
-            $category = NewsCategory::where('slug', $categorySlug)->first();
-            if ($category) {
-                $query->where('news_category_id', $category->id);
-            } else {
-                $query->whereRaw('1 = 0');
-            }
-        }
+        $newsItems = $query->with(['media', 'category', 'createdBy']) // Eager load relations
+                           ->paginate(9); // Nombre d'actualités par page
 
-        $sortOrder = $request->input('sort', 'desc');
-        if (!in_array($sortOrder, ['asc', 'desc'])) {
-            $sortOrder = 'desc';
-        }
-        $query->orderBy('published_at', $sortOrder);
-
-        $newsItems = $query->paginate(10)->withQueryString();
-
-        $categories = NewsCategory::where('is_active', true)
-            ->withCount(['news' => function ($q) {
-                $q->where('is_published', true)
-                  ->where('published_at', '<=', now());
-            }])
-            ->orderBy('name')
-            ->get()
-            ->filter(fn($category) => $category->news_count > 0);
-
-        $archives = News::select(
-                DB::raw('YEAR(published_at) as year'),
-                DB::raw('MONTH(published_at) as month_number'),
-                DB::raw('COUNT(*) as count')
-            )
-            ->where('is_published', true)
-            ->where('published_at', '<=', now())
-            ->groupBy('year', 'month_number')
-            ->orderBy('year', 'desc')
-            ->orderBy('month_number', 'desc')
-            ->get()
-            ->map(fn($item) => tap($item, function ($i) {
-                $date = Carbon::createFromDate($i->year, $i->month_number, 1);
-                $i->month_name_fr = ucfirst($date->translatedFormat('F'));
-            }));
-
-        return view('public.news.index', compact(
-            'pageTitle',
-            'newsItems',
-            'categories',
-            'archives',
-            'searchTerm',
-            'categorySlug',
-            'sortOrder'
-        ));
+        return view('public.news.index', [
+            'newsItems' => $newsItems,
+            'pageTitle' => isset($categoryName) ? __('Actualités de la catégorie : ') . $categoryName : __('Toutes les Actualités'),
+            'currentCategory' => $category ?? null,
+            'searchTerm' => $searchTerm ?? null,
+        ]);
     }
 
     /**
-     * Affiche le détail d'une actualité.
+     * Display the specified news item.
      *
-     * @param  \App\Models\News  $news
+     * @param \App\Models\News $news (Route Model Binding sur le slug)
+     * @return \Illuminate\View\View
      */
-    public function show(News $news)
+    public function show(News $news) // Laravel va automatiquement résoudre par le slug si getRouteKeyName() est défini dans le modèle News
     {
-        $pageTitle = $news->getTranslation('title', app()->getLocale());
-
-        // Articles similaires (jusqu'à 3)
-        $similarNews = collect();
-        if ($news->news_category_id) {
-            $similarNews = News::where('news_category_id', $news->news_category_id)
-                ->where('id', '!=', $news->id)
-                ->where('is_published', true)
-                ->where('published_at', '<=', now())
-                ->orderBy('published_at', 'desc')
-                ->take(3)
-                ->get();
+        if (!$news->is_published && !(auth()->check() && auth()->user()->can('preview unpublished news'))) { // Permettre un aperçu si l'utilisateur a la permission
+            abort(404);
         }
 
-        if ($similarNews->count() < 3) {
-            $needed = 3 - $similarNews->count();
-            $recentNews = News::where('id', '!=', $news->id)
-                ->whereNotIn('id', $similarNews->pluck('id')->all())
-                ->where('is_published', true)
-                ->where('published_at', '<=', now())
-                ->orderBy('published_at', 'desc')
-                ->take($needed)
-                ->get();
-            $similarNews = $similarNews->merge($recentNews);
-        }
+        $news->load(['media', 'category', 'createdBy']); // Charger les relations
 
-        // URL de l'article pour les partages
-        $articleUrl = route('public.news.show', ['news' => $news->slug]);
+        // Pour les méta-tags SEO
+        // Le trait HasLocalizedFields s'occupe de la traduction automatique pour $news->title, $news->meta_title, etc.
+        $metaTitle = $news->meta_title ?: $news->title;
+        $metaDescription = $news->meta_description ?: Str::limit(strip_tags($news->summary ?: $news->content), 160);
+        $ogImage = $news->cover_image_url ?: ($siteSettings->default_og_image_url ?? null); // $siteSettings est global
 
-        $shareLinks = [
-            'facebook' => 'https://www.facebook.com/sharer/sharer.php?u=' . urlencode($articleUrl),
-            'twitter'  => 'https://twitter.com/intent/tweet?url=' . urlencode($articleUrl) . '&text=' . urlencode($pageTitle),
-            'linkedin' => 'https://www.linkedin.com/shareArticle?mini=true&url=' . urlencode($articleUrl) . '&title=' . urlencode($pageTitle),
-        ];
+        // Optionnel: Récupérer des actualités similaires ou récentes
+        $relatedNews = News::where('is_published', true)
+            ->where('id', '!=', $news->id)
+            ->when($news->news_category_id, function ($query) use ($news) {
+                return $query->where('news_category_id', $news->news_category_id);
+            })
+            ->orderBy('published_at', 'desc')
+            ->take(3)
+            ->get();
 
-        return view('public.news.show', compact(
-            'pageTitle',
-            'news',
-            'similarNews',
-            'shareLinks'
-        ));
+        return view('public.news.show', compact('news', 'metaTitle', 'metaDescription', 'ogImage', 'relatedNews'));
     }
 }

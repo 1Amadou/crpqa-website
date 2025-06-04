@@ -74,21 +74,25 @@ class News extends Model implements HasMedia
         'is_active' => 'boolean',
     ];
 
-    /**
-     * Récupère la catégorie de l'actualité.
+   /**
+     * Get the category that owns the news item.
      */
     public function category(): BelongsTo
     {
         return $this->belongsTo(NewsCategory::class, 'news_category_id');
     }
 
-    /**
-     * Récupère l'utilisateur qui a créé l'actualité.
-     */
-    public function createdBy(): BelongsTo
+    
+    public function createdBy(): BelongsTo 
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
     }
+    
+    // OPTIONNEL: Si vous voulez toujours pouvoir utiliser $news->user (moins sémantique)
+    // public function user(): BelongsTo
+    // {
+    //     return $this->belongsTo(User::class, 'created_by_user_id');
+    // }
 
     /**
      * Enregistre les collections de médias pour ce modèle.

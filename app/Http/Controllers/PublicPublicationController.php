@@ -3,71 +3,109 @@
 namespace App\Http\Controllers;
 
 use App\Models\Publication;
+use App\Models\Researcher; // Pour filtrer par chercheur
+use App\Models\ResearchAxis; // Pour filtrer par axe de recherche (si pertinent)
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class PublicPublicationController extends Controller
 {
-    private function getPublicationTypes(): array
+    /**
+     * Display a listing of the publications.
+     */
+    public function index(Request $request)
     {
-        // Doit correspondre aux clés utilisées dans PublicationController (Admin) et potentiellement dans la factory/seeder
-        return [
-            'journal_article' => __('publications.types.journal_article'), // Exemple avec traduction
-            'conference_paper' => __('publications.types.conference_paper'),
-            'book_chapter' => __('publications.types.book_chapter'),
-            'book' => __('publications.types.book'),
-            'report' => __('publications.types.report'),
-            'thesis' => __('publications.types.thesis'),
-            'preprint' => __('publications.types.preprint'),
-            'other' => __('publications.types.other'),
-        ];
-        // Si vous n'utilisez pas les fichiers de traduction, revenez à un tableau simple :
-        // return [
-        //     'journal_article' => 'Article de Journal',
-        //     'conference_paper' => 'Article de Conférence',
-        //     // ... etc.
-        // ];
-    }
+        $query = Publication::query()
+            // ->where('is_published', true) // Si vous ajoutez un statut de publication aux publications
+            ->orderBy('publication_date', 'desc')
+            ->with(['media', 'researchers']); // Eager load
 
-    public function index()
-    {
-        $query = Publication::query();
+        $searchTerm = $request->input('search');
+        $typeFilter = $request->input('type');
+        $yearFilter = $request->input('year');
+        $researcherFilter = $request->input('researcher'); // ID du chercheur
 
-        // VALIDER : Décommentez et utilisez si vous avez une colonne 'is_published'
-        // if (Schema::hasColumn('publications', 'is_published')) {
-        //     $query->where('is_published', true);
-        // }
+        if ($searchTerm) {
+            $currentLocale = app()->getLocale();
+            $query->where(function ($q) use ($searchTerm, $currentLocale) {
+                $q->where('title_' . $currentLocale, 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('abstract_' . $currentLocale, 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('keywords_' . $currentLocale, 'LIKE', "%{$searchTerm}%") // Si keywords est localisé
+                  ->orWhere('journal_name', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('conference_name', 'LIKE', "%{$searchTerm}%");
+            });
+        }
 
-        $publications = $query->with(['media', 'researchers']) // Charger les médias (pour PDF) et les chercheurs
-                               ->orderBy('publication_date', 'desc')
-                               ->paginate(10);
+        if ($typeFilter) {
+            $query->where('type', $typeFilter);
+        }
 
-        return view('public.publications.index', compact('publications'));
-    }
-
-    // Utilisation du Route Model Binding pour $publication (basé sur le slug)
-    public function show(Publication $publication)
-    {
-        // VALIDER : Décommentez et utilisez si vous avez une colonne 'is_published'
-        // if (Schema::hasColumn('publications', 'is_published') && !$publication->is_published) {
-        //     abort(404); // Ne pas montrer les publications non publiées
-        // }
+        if ($yearFilter) {
+            $query->whereYear('publication_date', $yearFilter);
+        }
         
-        $publication->load(['researchers', 'createdBy', 'media']);
+        if ($researcherFilter) {
+            $query->whereHas('researchers', function ($q) use ($researcherFilter) {
+                $q->where('researchers.id', $researcherFilter);
+            });
+        }
 
-        // Le trait HasLocalizedFields devrait gérer l'affichage de $publication->title et $publication->abstract
-        // dans la langue courante directement dans la vue.
-        $metaTitle = $publication->title; // Accède au titre dans la locale courante
-        $metaDescription = Str::limit(strip_tags($publication->abstract), 160); // Accède à l'abstract dans la locale courante
+        $publications = $query->paginate(10)->appends($request->query());
 
-        $publicationTypes = $this->getPublicationTypes();
-        $publicationTypeDisplay = $publicationTypes[$publication->type] ?? $publication->type;
+        // Pour les filtres dans la vue
+        $types = Publication::select('type')->distinct()->orderBy('type')->pluck('type')->mapWithKeys(function ($type) {
+            return [$type => __(Str::title(str_replace('_', ' ', $type)))]; // Traduire les types si possible
+        });
+        $years = Publication::selectRaw('YEAR(publication_date) as year')
+                            ->distinct()
+                            ->orderBy('year', 'desc')
+                            ->pluck('year');
+        $researchersForFilter = Researcher::where('is_active', true)
+                                    ->orderBy('last_name_'.app()->getLocale())->orderBy('first_name_'.app()->getLocale())
+                                    ->get(['id', 'first_name_'.app()->getLocale().' as first_name', 'last_name_'.app()->getLocale().' as last_name'])
+                                    ->mapWithKeys(function($researcher){
+                                        return [$researcher->id => $researcher->first_name . ' ' . $researcher->last_name];
+                                    });
 
-        return view('public.publications.show', compact(
-            'publication',
-            'metaTitle',
-            'metaDescription',
-            'publicationTypeDisplay'
+
+        return view('public.publications.index', compact(
+            'publications', 
+            'types', 
+            'years', 
+            'researchersForFilter',
+            'searchTerm',
+            'typeFilter',
+            'yearFilter',
+            'researcherFilter'
         ));
+    }
+
+    /**
+     * Display the specified publication.
+     */
+    public function show(Publication $publication) // Route Model Binding par slug
+    {
+        // if (!$publication->is_published && !(auth()->check() && auth()->user()->can('preview unpublished publications'))) {
+        //     abort(404);
+        // }
+        $publication->load(['media', 'researchers' => function ($query) {
+            $query->where('is_active', true)->orderBy('display_order');
+        }]);
+        
+        $siteSettings = app('siteSettings'); // Assumant que $siteSettings est globalement disponible
+        $metaTitle = $publication->getTranslation('meta_title', app()->getLocale(), false) ?: $publication->title;
+        $metaDescription = $publication->getTranslation('meta_description', app()->getLocale(), false) ?: Str::limit(strip_tags($publication->abstract), 160);
+        $ogImage = $publication->cover_image_url ?: ($siteSettings->default_og_image_url ?? null);
+
+
+        // Publications similaires (ex: même type, ou par les mêmes auteurs)
+        $relatedPublications = Publication::where('id', '!=', $publication->id)
+            // ->where('is_published', true)
+            ->where('type', $publication->type) // Exemple simple: même type
+            ->orderBy('publication_date', 'desc')
+            ->take(3)
+            ->get();
+
+        return view('public.publications.show', compact('publication', 'metaTitle', 'metaDescription', 'ogImage', 'relatedPublications'));
     }
 }

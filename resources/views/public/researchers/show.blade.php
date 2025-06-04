@@ -1,160 +1,133 @@
 @extends('layouts.public')
 
-@php
-    // $researcher est passé par le contrôleur
-    $primaryLocale = app()->getLocale();
-@endphp
-
-@section('title', $researcher->full_name . ' - ' . ($siteSettings->site_name ?? config('app.name')))
-@section('meta_description', Str::limit(strip_tags($researcher->getTranslation('biography', $primaryLocale, false)), 160))
-@section('og_title', $researcher->full_name)
-@section('og_description', Str::limit(strip_tags($researcher->getTranslation('biography', $primaryLocale, false)), 160))
-@if($researcher->photo_profile_url)
-    @section('og_image', $researcher->photo_profile_url)
-@else
-    {{-- @section('og_image', $siteSettings['default_og_image_url'] ?? asset('assets/images/default_og_image.jpg')) --}}
+@section('title', $metaTitle . ' - ' . ($siteSettings->site_name_short ?: $siteSettings->site_name ?: config('app.name')))
+@section('meta_description', $metaDescription)
+@section('og_title', $metaTitle)
+@section('og_description', $metaDescription)
+@if($ogImage)
+    @section('og_image', $ogImage)
 @endif
-@section('og_type', 'profile')
+@section('og_type', 'profile') {{-- Type Open Graph pour un profil --}}
 
+@php $currentLocale = app()->getLocale(); @endphp
+
+@push('styles')
+<style>
+    .researcher-show-hero { padding-top: calc(var(--header-height, 4rem) + 1rem); padding-bottom: 2rem; position: relative; background-color: var(--bg-color-light, #f9fafb); }
+    .dark .researcher-show-hero { background-color: var(--dark-bg-color-alt, #1f2937); }
+    .researcher-show-hero__photo { width: 10rem; height: 10rem; md:width: 12rem; md:height: 12rem; border-radius: 50%; object-fit: cover; border: 5px solid white; box-shadow: var(--shadow-lg); }
+    .dark .researcher-show-hero__photo { border-color: var(--dark-card-bg-color, #374151); }
+    .researcher-show-hero__name { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 700; line-height: 1.2; color: var(--title-color); margin-bottom: 0.25rem; }
+    .dark .researcher-show-hero__name { color: var(--dark-title-color); }
+    .researcher-show-hero__position { font-size: 1.125rem; color: rgb(var(--color-primary)); font-weight: 500; margin-bottom: 1rem; }
+    .researcher-show-hero__social-links a { color: var(--text-color-light); hover:color: rgb(var(--color-primary)); font-size: 1.5rem; } /* text-2xl */
+    .dark .researcher-show-hero__social-links a { color: var(--dark-text-color-light); hover:color: rgb(var(--color-primary-light)); }
+    .content-section { padding-top: 2rem; padding-bottom: 2.5rem; }
+    @media(min-width: 768px){ .content-section { padding-top: 3rem; padding-bottom: 3.5rem; } }
+    .content-section__title { font-size: 1.5rem; font-weight: 600; color: var(--title-color); margin-bottom: 1rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; }
+    .dark .content-section__title { color: var(--dark-title-color); border-color: #4b5563; }
+</style>
+@endpush
 
 @section('content')
-<div class="bg-white dark:bg-gray-800 py-12 md:py-16">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-        <article class="max-w-4xl mx-auto">
-            
-            <header class="mb-8 md:mb-10">
-                <nav class="mb-6 text-sm" aria-label="Breadcrumb">
-                    <ol class="list-none p-0 inline-flex flex-wrap">
-                        <li class="flex items-center">
-                            <a href="{{ route('public.home') }}" class="text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">{{ __('Accueil') }}</a>
-                            <svg class="fill-current w-3 h-3 mx-2 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569 9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z"/></svg>
-                        </li>
-                        <li class="flex items-center">
-                            <a href="{{ route('public.researchers.index') }}" class="text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400">{{ __('Notre Équipe') }}</a>
-                        </li>
-                    </ol>
-                </nav>
-
-                <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                    @if($researcher->photo_profile_url)
-                        <img src="{{ $researcher->photo_profile_url }}" 
-                             alt="{{ $researcher->getTranslation('photo_alt_text', $primaryLocale, false) ?: $researcher->full_name }}"
-                             class="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover shadow-lg border-4 border-white dark:border-gray-700 flex-shrink-0">
-                    @else
-                        <div class="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500 shadow-lg border-4 border-white dark:border-gray-700 flex-shrink-0">
-                            <x-heroicon-o-user-circle class="w-24 h-24 sm:w-28 sm:h-28"/>
-                        </div>
-                    @endif
-                    <div class="text-center sm:text-left">
-                        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white leading-tight">
-                            {{ $researcher->full_name }}
-                        </h1>
-                        @if($researcher->title_position)
-                            <p class="mt-1 text-lg text-primary-600 dark:text-primary-400 font-semibold">
-                                {{ $researcher->title_position }}
-                            </p>
+    <main class="main">
+        <section class="researcher-show-hero section--bg" data-aos="fade-in">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="md:flex md:items-center md:gap-8 py-8">
+                    <div class="flex-shrink-0 text-center md:text-left mb-6 md:mb-0" data-aos="fade-right">
+                        <img src="{{ $researcher->photo_profile_url ?? asset('assets/images/placeholders/researcher_default.png') }}" 
+                             alt="{{ $researcher->getTranslation('photo_alt_text', $currentLocale, false) ?: $researcher->full_name }}"
+                             class="researcher-show-hero__photo mx-auto md:mx-0">
+                    </div>
+                    <div class="text-center md:text-left" data-aos="fade-left" data-aos-delay="100">
+                        <h1 class="researcher-show-hero__name">{{ $researcher->full_name }}</h1>
+                        <p class="researcher-show-hero__position">{{ $researcher->title_position }}</p>
+                        @if($researcher->email)
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1"><a href="mailto:{{ $researcher->email }}" class="hover:text-primary-600 dark:hover:text-primary-400 inline-flex items-center"><x-heroicon-s-envelope class="w-4 h-4 mr-1.5"/> {{ $researcher->email }}</a></p>
                         @endif
-                        <div class="mt-3 text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                            @if($researcher->email)
-                                <p><x-heroicon-s-envelope class="h-4 w-4 inline mr-1.5 align-text-bottom"/> <a href="mailto:{{ $researcher->email }}" class="hover:underline">{{ $researcher->email }}</a></p>
-                            @endif
-                            @if($researcher->phone)
-                                <p><x-heroicon-s-phone class="h-4 w-4 inline mr-1.5 align-text-bottom"/> {{ $researcher->phone }}</p>
-                            @endif
+                        @if($researcher->phone)
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3"><x-heroicon-s-phone class="w-4 h-4 mr-1.5 inline-block"/> {{ $researcher->phone }}</p>
+                        @endif
+                        <div class="researcher-show-hero__social-links flex justify-center md:justify-start space-x-4">
+                            @if($researcher->website_url)<a href="{{ $researcher->website_url }}" target="_blank" rel="noopener noreferrer" title="{{__('Site Web')}}"><ion-icon name="globe-outline"></ion-icon></a>@endif
+                            @if($researcher->linkedin_url)<a href="{{ $researcher->linkedin_url }}" target="_blank" rel="noopener noreferrer" title="LinkedIn"><ion-icon name="logo-linkedin"></ion-icon></a>@endif
+                            @if($researcher->researchgate_url)<a href="{{ $researcher->researchgate_url }}" target="_blank" rel="noopener noreferrer" title="ResearchGate"><ion-icon name="navigate-circle-outline"></ion-icon></a>@endif
+                            @if($researcher->google_scholar_url)<a href="{{ $researcher->google_scholar_url }}" target="_blank" rel="noopener noreferrer" title="Google Scholar"><ion-icon name="school-outline"></ion-icon></a>@endif
+                            @if($researcher->orcid_id)<a href="https://orcid.org/{{ $researcher->orcid_id }}" target="_blank" rel="noopener noreferrer" title="ORCID iD"><ion-icon name="id-card-outline"></ion-icon></a>@endif
                         </div>
                     </div>
                 </div>
-            </header>
-            
-            {{-- Section pour onglets de langue si biographie ou intérêts de recherche sont longs et spécifiques à la langue --}}
-            {{-- Pour simplifier, on affiche directement le contenu de la langue actuelle --}}
-            
-            @if($researcher->biography)
-            <div class="my-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-3">{{ __('Biographie') }}</h2>
-                <div class="prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-200 content-styles">
-                    {!! $researcher->biography !!} {{-- Si HTML de WYSIWYG --}}
-                </div>
+                 <nav aria-label="breadcrumb" class="mt-4 md:mt-0 pb-4" data-aos="fade-up" data-aos-delay="200">
+                    <ol class="breadcrumb !justify-start text-gray-600 dark:text-gray-400">
+                        <li class="breadcrumb-item"><a href="{{ route('public.home') }}">{{ __('Accueil') }}</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('public.researchers.index') }}">{{ __('Notre Équipe') }}</a></li>
+                        <li class="breadcrumb-item active !text-gray-500 dark:!text-gray-500" aria-current="page">/ {{ Str::limit($researcher->full_name, 25) }}</li>
+                    </ol>
+                </nav>
             </div>
-            @endif
+        </section>
 
-            @if($researcher->research_interests)
-            <div class="my-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-3">{{ __('Domaines de Recherche') }}</h2>
-                <div class="prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-200 content-styles">
-                     {!! $researcher->research_interests !!} {{-- Si HTML de WYSIWYG --}}
+        <section class="content-section bg-white dark:bg-gray-800">
+            <div class="container max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                @if($researcher->biography)
+                <div class="mb-10" data-aos="fade-up">
+                    <h2 class="content-section__title">{{__('Biographie')}}</h2>
+                    <div class="prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 content-styles text-justify">
+                        {!! $researcher->biography !!}
+                    </div>
                 </div>
-            </div>
-            @endif
-            
-            @php
-                $externalLinks = [
-                    ['url' => $researcher->website_url, 'label' => __('Site Web Personnel'), 'icon' => 'heroicon-o-globe-alt'],
-                    ['url' => $researcher->linkedin_url, 'label' => 'LinkedIn', 'icon' => 'heroicon-s-link'], // Faute d'icône spécifique LinkedIn
-                    ['url' => $researcher->researchgate_url, 'label' => 'ResearchGate', 'icon' => 'heroicon-s-link'],
-                    ['url' => $researcher->google_scholar_url, 'label' => 'Google Scholar', 'icon' => 'heroicon-s-academic-cap'],
-                ];
-                $externalLinks = array_filter($externalLinks, fn($link) => !empty($link['url']));
-            @endphp
+                @endif
 
-            @if(!empty($externalLinks) || $researcher->orcid_id)
-            <div class="my-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">{{ __('Profils Externes et Identifiants') }}</h3>
-                <div class="space-y-3 text-sm">
-                    @foreach($externalLinks as $link)
-                        <p>
-                            <x-dynamic-component :component="$link['icon']" class="h-5 w-5 inline-block mr-2 align-text-bottom text-primary-500"/>
-                            <a href="{{ $link['url'] }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 dark:text-primary-400 hover:underline">
-                                {{ $link['label'] }}
-                            </a>
-                        </p>
-                    @endforeach
-                    @if($researcher->orcid_id)
-                         <p>
-                            <x-heroicon-s-identification class="h-5 w-5 inline-block mr-2 align-text-bottom text-primary-500"/>
-                            ORCID iD: <span class="font-mono">{{ $researcher->orcid_id }}</span>
-                        </p>
-                    @endif
+                @if($researcher->research_interests)
+                <div class="mb-10" data-aos="fade-up">
+                    <h2 class="content-section__title">{{__('Domaines de Recherche')}}</h2>
+                    <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 content-styles text-justify">
+                         {!! $researcher->research_interests !!}
+                    </div>
                 </div>
-            </div>
-            @endif
+                @endif
 
-            {{-- Publications associées au chercheur --}}
-            @if($researcher->publications->isNotEmpty())
-                <div class="my-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-                        {{ __('Publications Récentes de :researcherName', ['researcherName' => $researcher->first_name]) }} 
-                        ({{ $researcher->publications->count() }})
-                    </h3>
-                    <ul class="space-y-3">
-                        @foreach($researcher->publications->take(5) as $publication) {{-- Afficher les 5 plus récentes par exemple --}}
-                            <li class="pb-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
-                                <a href="{{ route('public.publications.show', $publication->slug) }}" class="text-md font-medium text-primary-600 dark:text-primary-400 hover:underline">
-                                    {{ $publication->title }}
-                                </a>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                    {{ $publication->type_display ?? Str::title(str_replace('_', ' ', $publication->type)) }} 
-                                    @if($publication->publication_date)
-                                        - {{ $publication->publication_date->translatedFormat('Y') }}
-                                    @endif
-                                </p>
-                            </li>
+                @if($researcher->publications->isNotEmpty())
+                <div data-aos="fade-up">
+                    <h2 class="content-section__title">{{__('Publications Récentes')}} ({{ $researcher->publications->count() }})</h2>
+                    <div class="space-y-6">
+                        @foreach($researcher->publications->take(5) as $publication) {{-- Afficher les 5 plus récentes --}}
+                        <article class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow">
+                            <h3 class="text-md font-semibold text-primary-600 dark:text-primary-400">
+                                <a href="{{ route('public.publications.show', $publication->slug) }}">{{ $publication->title }}</a>
+                            </h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span>{{ $publication->type_display ?? Str::title(str_replace('_', ' ', $publication->type)) }}</span>
+                                @if($publication->publication_date)<span class="mx-1">&bull;</span> {{ $publication->publication_date->translatedFormat('Y') }} @endif
+                                @if($publication->journal_name) <span class="mx-1">&bull;</span> <em>{{ $publication->journal_name }}</em> @endif
+                            </p>
+                            @php
+                                $pubShowAuthorsList = [];
+                                if ($publication->researchers()->where('researchers.id', '!=', $researcher->id)->exists()) { // Autres auteurs du CRPQA
+                                    $otherCrpqaAuthors = $publication->researchers()->where('researchers.id', '!=', $researcher->id)->take(2)->get()->pluck('full_name')->join(', ');
+                                    if($otherCrpqaAuthors) $pubShowAuthorsList[] = $otherCrpqaAuthors;
+                                    if($publication->researchers()->where('researchers.id', '!=', $researcher->id)->count() > 2) $pubShowAuthorsList[] = 'et al.';
+                                }
+                                if ($publication->authors_external) { $pubShowAuthorsList[] = e($publication->authors_external); }
+                            @endphp
+                            @if(!empty($pubShowAuthorsList))
+                            <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                               <span class="font-medium">{{__('Co-auteurs (extrait) :')}}</span> {{ Str::limit(implode('; ', $pubShowAuthorsList), 150) }}
+                            </p>
+                            @endif
+                        </article>
                         @endforeach
-                        {{-- Lien pour voir toutes les publications du chercheur si une telle page existe --}}
-                    </ul>
+                        @if($researcher->publications->count() > 5 && Route::has('public.publications.index'))
+                            <div class="mt-4">
+                                <a href="{{ route('public.publications.index', ['researcher' => $researcher->id]) }}" class="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                                    {{ __('Voir toutes les publications de :name', ['name' => $researcher->first_name]) }} &rarr;
+                                </a>
+                            </div>
+                        @endif
+                    </div>
                 </div>
-            @endif
-            
-        </article>
-
-        <footer class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700 text-center">
-            <a href="{{ route('public.researchers.index') }}" class="inline-flex items-center text-sm font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 group">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5 transform transition-transform duration-200 group-hover:-translate-x-0.5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                </svg>
-                {{ __('Retour à l\'équipe') }}
-            </a>
-        </footer>
-    </div>
-</div>
+                @endif
+            </div>
+        </section>
+    </main>
 @endsection

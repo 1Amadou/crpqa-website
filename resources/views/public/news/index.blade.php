@@ -1,205 +1,154 @@
 @extends('layouts.public')
 
-@section('title', $pageTitle ?? "Actualités du CRPQA")
+{{-- $pageTitle, $newsItems (paginated), $currentCategory (optionnel), $searchTerm (optionnel) sont passés par le contrôleur --}}
 
-@push('page-styles')
+@section('title', $pageTitle . ' - ' . ($siteSettings->site_name_short ?: $siteSettings->site_name ?: config('app.name')))
+@if($currentCategory)
+    @section('meta_description', __('Actualités et articles sur :categoryName.', ['categoryName' => $currentCategory->name]))
+@else
+    @section('meta_description', $siteSettings->getTranslation('site_description', app()->getLocale(), false) ?: __('Suivez les dernières actualités et découvertes du CRPQA.'))
+@endif
+
+@push('styles')
 <style>
-    /* Styles pour les filtres et la sidebar, si non définis globalement */
-    .news-hero { padding: 3rem 0; background-color: var(--first-color-lighten); text-align: center; }
-    .news-hero__title { font-size: var(--h1-font-size); color: var(--title-color); margin-bottom: var(--mb-0-5); }
-    .news-hero .breadcrumb { background-color: transparent; justify-content: center; padding: 0; margin-bottom: 0; }
-    .news-hero .breadcrumb-item a { color: var(--first-color); }
-    .news-hero .breadcrumb-item.active { color: var(--text-color-light); }
-
-    .news-filters { background-color: #fff; padding: var(--mb-1-5); border-radius: var(--radius); box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: var(--mb-2); }
-    .news-filters .form-group { margin-bottom: var(--mb-1); }
-    .news-filters .form-group:last-child { margin-bottom: 0; }
-    .news-filters label { display: block; font-weight: var(--font-medium); color: var(--title-color); margin-bottom: var(--mb-0-25); font-size: var(--small-font-size); }
-    .news-filters .form__input, .news-filters .form__select {
-        width: 100%; padding: var(--mb-0-75) var(--mb-1); border: 1px solid var(--border-color, #ccc);
-        border-radius: var(--radius-small, .25rem); font-size: var(--normal-font-size); background-color: #fff;
-        color: var(--text-color); line-height: 1.5;
-    }
-    .news-filters .form__input:focus, .news-filters .form__select:focus {
-        border-color: var(--first-color); outline: 0; box-shadow: 0 0 0 0.2rem rgba(var(--first-color-rgb), 0.25);
-    }
-    .news-filters .grid { align-items: flex-end; gap: var(--mb-1); }
-    .news-filters .button { width: 100%; }
-
-    .news-layout__grid { display: grid; gap: var(--mb-2, 2rem); }
-    @media (min-width: 992px) { .news-layout__grid { grid-template-columns: 3fr 1fr; } }
-    
-    .sidebar__widget { background-color: var(--first-color-lightest, #f8faff); padding: var(--mb-1-5); border-radius: var(--radius); margin-bottom: var(--mb-1-5); }
-    .sidebar__widget-title { font-size: var(--h3-font-size); color: var(--title-color); margin-bottom: var(--mb-1); padding-bottom: var(--mb-0-75); border-bottom: 1px solid var(--border-color, #eee); }
-    .sidebar__widget ul { list-style: none; padding: 0; }
-    .sidebar__widget ul li a { color: var(--text-color); text-decoration: none; font-size: var(--normal-font-size); padding: var(--mb-0-5) 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted var(--border-color-light, #e9e9e9); }
-    .sidebar__widget ul li a:hover, .sidebar__widget ul li a.active { color: var(--first-color); }
-    .sidebar__widget ul li:last-child a { border-bottom: none; }
-    .sidebar__widget ul li .count { color: var(--text-color-light); font-size: var(--small-font-size); background-color: var(--body-color); padding: 2px 6px; border-radius: var(--radius-small); }
-    
-    .alert-info { background-color: var(--first-color-lighter); color: var(--text-color); padding: var(--mb-1-5); border-radius: var(--radius); text-align: center; border: 1px solid var(--first-color-lighten); }
-
-    /* Les classes .news__* doivent être définies dans votre style.css ou home.css */
-    /* Si elles ne le sont pas, la mise en page des cartes d'actualités sera basique. */
-    .news-list__main-container .news__card { margin-bottom: var(--mb-2); } /* Espace entre les cartes si .grid ne le fait pas */
-
+    /* Repris de votre home.blade.php, à déplacer dans un CSS global si possible */
+    .section-card { background-color: var(--card-bg-color, white); color: var(--card-text-color, inherit); border-radius: var(--radius-lg, 0.75rem); box-shadow: var(--shadow-lg); transition: all 0.3s ease-in-out; overflow: hidden; display: flex; flex-direction: column; }
+    .dark .section-card { background-color: var(--dark-card-bg-color, #374151); color: var(--dark-text-color, #d1d5db); }
+    .section-card:hover { box-shadow: var(--shadow-2xl); transform: translateY(-6px); }
+    .section-card__image-link { display: block; aspect-ratio: 16 / 10; overflow: hidden; }
+    .section-card__image { width: 100%; height: 100%; object-fit: cover; }
+    .section-card__content { padding: 1.25rem; flex-grow: 1; display: flex; flex-direction: column; }
+    .section-card__meta { font-size: 0.75rem; color: var(--text-color-light, #6b7280); margin-bottom: 0.5rem; display: flex; flex-wrap: wrap; gap-x: 0.75rem; gap-y: 0.25rem; align-items: center;}
+    .dark .section-card__meta { color: var(--dark-text-color-light, #9ca3af); }
+    .news__category-badge { font-weight: 500; padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-size: 0.7rem; }
+    .section-card__title { font-size: 1.125rem; font-semibold; line-height: 1.4; margin-bottom: 0.5rem; }
+    .section-card__title a { color: var(--title-color, #1f2937); text-decoration: none; }
+    .dark .section-card__title a { color: var(--dark-title-color, #f3f4f6); }
+    .section-card__title a:hover { color: rgb(var(--color-primary)); }
+    .section-card__description { font-size: 0.875rem; line-height: 1.625; margin-bottom: 1rem; flex-grow: 1; }
+    .section-card__link { margin-top: auto; display: inline-flex; align-items: center; font-size: 0.875rem; font-semibold; color: rgb(var(--color-primary)); text-decoration:none; }
+    .section-card__link ion-icon, .section-card__link svg { margin-left: 0.25rem; width: 1em; height: 1em; }
 </style>
 @endpush
 
 @section('content')
-    <main class="main">
-        <section class="news-hero section--bg">
-            <div class="container">
-                <h1 class="news-hero__title" data-aos="fade-down">{{ $pageTitle }}</h1>
-                <nav aria-label="breadcrumb" data-aos="fade-up" data-aos-delay="100">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ route('public.home') }}">Accueil</a></li>
-                        <li class="breadcrumb-item active" aria-current="page" style="padding-left: .5rem;">&nbsp;/ Actualités</li>
-                    </ol>
-                </nav>
-            </div>
-        </section>
+<div class="bg-slate-50 dark:bg-gray-900">
+    <section class="page-hero-section section--bg py-12 md:py-20 text-center" 
+             style="background-image: linear-gradient(rgba(var(--color-primary-dark-rgb,10,42,77),0.75), rgba(var(--color-secondary-dark-rgb,29,44,90),0.85)), url({{ $siteSettings->default_og_image_url ?: asset('assets/images/backgrounds/news_hero_default.jpg') }});">
+        <div class="container">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-tight" data-aos="fade-up">
+                {{ $pageTitle }}
+            </h1>
+            @if($currentCategory)
+            <p class="mt-2 text-lg text-gray-200" data-aos="fade-up" data-aos-delay="100">{{ __('Filtré par catégorie') }}</p>
+            @endif
+            @if($searchTerm)
+            <p class="mt-2 text-lg text-gray-200" data-aos="fade-up" data-aos-delay="100">{{ __('Résultats de recherche pour : ') }} "{{ $searchTerm }}"</p>
+            @endif
+        </div>
+    </section>
 
-        <section class="news-listing-section section">
-            <div class="container">
-                <form action="{{ route('public.news.index') }}" method="GET" class="news-filters" data-aos="fade-up">
-                    <div class="grid"> 
-                        <div class="form-group">
-                            <label for="search">Rechercher</label>
-                            <input type="text" name="search" id="search" class="form__input" placeholder="Mots-clés..." value="{{ $searchTerm ?? '' }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="category">Catégorie</label>
-                            <select name="category" id="category" class="form__select">
-                                <option value="">Toutes</option>
-                                @foreach ($categories as $cat)
-                                    <option value="{{ $cat->slug }}" {{ ($categorySlug ?? '') == $cat->slug ? 'selected' : '' }}>
-                                        {{ $cat->name_fr ?? $cat->name }} {{-- Adaptez si NewsCategory est localisée --}}
-                                        ({{ $cat->news_items_count }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="sort">Trier par</label>
-                            <select name="sort" id="sort" class="form__select">
-                                <option value="desc" {{ ($sortOrder ?? 'desc') == 'desc' ? 'selected' : '' }}>Plus récentes</option>
-                                <option value="asc" {{ ($sortOrder ?? 'desc') == 'asc' ? 'selected' : '' }}>Plus anciennes</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <button type="submit" class="button button--flex">
-                                <i class="uil uil-filter button__icon"></i>Filtrer
-                            </button>
-                        </div>
-                         @if($searchTerm || $categorySlug)
-                        <div class="form-group">
-                            <a href="{{ route('public.news.index') }}" class="button button--white button--flex">
-                                <i class="uil uil-times button__icon"></i>Effacer
-                            </a>
-                        </div>
+    <section class="section news-index-section">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            
+            {{-- Optionnel: Formulaire de recherche et filtre par catégorie --}}
+            <div class="mb-8 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md" data-aos="fade-up">
+                <form action="{{ route('public.news.index') }}" method="GET" class="grid sm:grid-cols-2 md:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{__('Rechercher une actualité')}}</label>
+                        <input type="text" name="search" id="search" value="{{ $searchTerm ?? '' }}" placeholder="{{__('Mots-clés...')}}" class="mt-1 block w-full form-input">
+                    </div>
+                    <div>
+                        @php
+                            $newsCategories = \App\Models\NewsCategory::where('is_active', true)->orderBy('name')->pluck('name', 'slug');
+                        @endphp
+                        @if($newsCategories->count() > 0)
+                        <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{__('Filtrer par catégorie')}}</label>
+                        <select name="category" id="category" class="mt-1 block w-full form-select">
+                            <option value="">{{__('Toutes les catégories')}}</option>
+                            @foreach($newsCategories as $slug => $name)
+                                <option value="{{ $slug }}" {{ ($currentCategory && $currentCategory->slug == $slug) ? 'selected' : '' }}>
+                                    {{ $name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @endif
+                    </div>
+                    <div class="flex space-x-2">
+                        <button type="submit" class="button button--primary w-full sm:w-auto justify-center">
+                            <x-heroicon-o-magnifying-glass class="w-5 h-5 mr-2"/> {{__('Rechercher')}}
+                        </button>
+                        @if($searchTerm || $currentCategory)
+                        <a href="{{ route('public.news.index') }}" class="button button--outline w-full sm:w-auto justify-center">
+                            {{__('Réinitialiser')}}
+                        </a>
                         @endif
                     </div>
                 </form>
-
-                <div class="news-layout__grid">
-                    <div class="news-list__main-container">
-                        @if ($newsItems->count() > 0)
-                            {{-- Utilisation de la structure de la page d'accueil pour la grille d'actualités --}}
-                            <div class="news__container grid"> 
-                                @foreach ($newsItems as $newsItem)
-                                    <article class="news__card" data-aos="fade-up" data-aos-delay="{{ $loop->index * 70 }}">
-                                        @if($newsItem->cover_image_url)
-                                        <a href="{{ route('public.news.show', $newsItem->slug) }}" class="news__image-link">
-                                            <img src="{{ $newsItem->cover_image_url }}" 
-                                                 alt="{{ $newsItem->cover_image_alt_text ?? $newsItem->title }}" class="news__img">
-                                        </a>
-                                        @else
-                                        {{-- Fallback si pas d'image --}}
-                                        <a href="{{ route('public.news.show', $newsItem->slug) }}" class="news__image-link" style="background-color: var(--first-color-lightest); display:flex; align-items:center; justify-content:center; height:200px;">
-                                            <img src="{{ asset('img/placeholders/news_default.jpg') }}" alt="{{ $newsItem->title }}" class="news__img" style="height:auto; width:auto; max-height:100px;">
-                                        </a>
-                                        @endif
-                                        <div class="news__data">
-                                            <span class="news__meta">
-                                                {{ $newsItem->published_at ? $newsItem->published_at->translatedFormat('d M Y') : '' }}
-                                                @if($newsItem->category)
-                                                    &nbsp;|&nbsp;<a href="{{ route('public.news.index', array_merge(request()->except(['category', 'page']), ['category' => $newsItem->category->slug])) }}" class="news__category">
-                                                        {{ $newsItem->category->name_fr ?? $newsItem->category->name }} {{-- Adaptez à votre champ de nom de catégorie --}}
-                                                    </a>
-                                                @endif
-                                            </span>
-                                            <h3 class="news__title">
-                                                <a href="{{ route('public.news.show', $newsItem->slug) }}">
-                                                    {{ $newsItem->title }} {{-- Accès direct grâce à la surcharge getAttribute() --}}
-                                                </a>
-                                            </h3>
-                                            <p class="news__description">
-                                                {!! Str::limit(strip_tags($newsItem->excerpt), 100) !!} {{-- Accès direct --}}
-                                            </p>
-                                            <a href="{{ route('public.news.show', $newsItem->slug) }}" class="button button--flex button--small news__button">
-                                                Lire la suite <i class="uil uil-arrow-right button__icon"></i>
-                                            </a>
-                                        </div>
-                                    </article>
-                                @endforeach
-                            </div>
-                            
-                            @if ($newsItems->hasPages())
-                                <div class="pagination-links mt-5" data-aos="fade-up">
-                                    {{ $newsItems->links('vendor.pagination.tailwind') }}
-                                </div>
-                            @endif
-                        @else
-                            <div class="alert alert-info" data-aos="fade-up">
-                                <i class="uil uil-info-circle" style="font-size: 1.5rem; margin-right: 0.5rem;"></i>
-                                Aucune actualité disponible pour le moment ou correspondant à vos critères.
-                                @if($searchTerm || $categorySlug)
-                                    <br><a href="{{ route('public.news.index') }}" class="button button--small" style="margin-top: var(--mb-1);">Voir toutes les actualités</a>
-                                @endif
-                            </div>
-                        @endif
-                    </div>
-
-                    <aside class="sidebar__container" data-aos="fade-left" data-aos-delay="200">
-                        @if($categories->isNotEmpty())
-                        <div class="sidebar__widget">
-                            <h3 class="sidebar__widget-title">Catégories</h3>
-                            <ul>
-                                <li>
-                                    <a href="{{ route('public.news.index', array_filter(request()->except(['category', 'page']))) }}"
-                                       class="{{ empty($categorySlug) ? 'active' : '' }}">
-                                        Toutes les catégories
-                                    </a>
-                                </li>
-                                @foreach ($categories as $cat)
-                                    <li>
-                                        <a href="{{ route('public.news.index', array_merge(request()->except(['category', 'page']), ['category' => $cat->slug])) }}" 
-                                           class="{{ ($categorySlug ?? '') == $cat->slug ? 'active' : '' }}">
-                                            {{ $cat->name_fr ?? $cat->name }} {{-- Adaptez à votre champ de nom de catégorie --}}
-                                            <span class="count">{{ $cat->news_items_count }}</span>
-                                        </a>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                        @endif
-
-                        @if($archives->isNotEmpty())
-                        <div class="sidebar__widget">
-                            <h3 class="sidebar__widget-title">Archives</h3>
-                            <ul>
-                                @foreach ($archives as $archive)
-                                    <li>
-                                        <span>{{ $archive->month_name_fr }} {{ $archive->year }} <span class="count">{{ $archive->count }}</span></span>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                        @endif
-                    </aside>
-                </div>
             </div>
-        </section>
-    </main>
+
+
+            @if($newsItems->count() > 0)
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                    @foreach($newsItems as $index => $newsItem)
+                    <article class="section-card news__card group" data-aos="fade-up" data-aos-delay="{{ ($index % 3 * 100) }}">
+                        <a href="{{ route('public.news.show', $newsItem->slug) }}" class="section-card__image-link block h-56 overflow-hidden rounded-t-lg" aria-label="{{ __('Lire l\'actualité:') }} {{ $newsItem->title }}">
+                            <img src="{{ $newsItem->cover_image_thumbnail_url ?? asset('assets/images/placeholders/news_default_'.($index%2+1).'.jpg') }}"
+                                 alt="{{ $newsItem->cover_image_alt ?? $newsItem->title }}"
+                                 class="section-card__image group-hover:scale-105 transition-transform duration-300">
+                        </a>
+                        <div class="section-card__content">
+                            <p class="section-card__meta news__meta">
+                                @if($newsItem->published_at)
+                                <time datetime="{{ $newsItem->published_at->toDateString() }}">{{ $newsItem->published_at->translatedFormat('d M Y') }}</time>
+                                @endif
+                                @if($newsItem->category)
+                                    <span class="news__category-separator mx-1">&bull;</span>
+                                    <span class="news__category-badge" 
+                                          style="background-color: {{ $newsItem->category->color ?: 'rgba(var(--color-primary-rgb),0.1)' }}; color: {{ $newsItem->category->text_color ?: 'rgb(var(--color-primary))' }};">
+                                        {{ $newsItem->category->name }}
+                                    </span>
+                                @endif
+                            </p>
+                            <h3 class="section-card__title text-lg news__title">
+                                <a href="{{ route('public.news.show', $newsItem->slug) }}">
+                                    {{ Str::limit($newsItem->title, 60) }}
+                                </a>
+                            </h3>
+                            <p class="section-card__description news__description">
+                                {{ Str::limit(strip_tags($newsItem->summary ?: $newsItem->content), 110) }}
+                            </p>
+                            <a href="{{ route('public.news.show', $newsItem->slug) }}" class="section-card__link news__link">
+                                {{ __('Lire la suite') }} <ion-icon name="arrow-forward-outline"></ion-icon>
+                            </a>
+                        </div>
+                    </article>
+                    @endforeach
+                </div>
+
+                <div class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
+                    {{ $newsItems->appends(request()->query())->links() }} {{-- Ajout de appends pour conserver les filtres/recherche --}}
+                </div>
+            @else
+                <div class="text-center py-12" data-aos="fade-up">
+                    <x-heroicon-o-newspaper class="mx-auto h-12 w-12 text-gray-400"/>
+                    <h3 class="mt-2 text-lg font-medium text-gray-800 dark:text-white">
+                        @if($searchTerm)
+                            {{ __('Aucune actualité trouvée pour votre recherche.') }}
+                        @elseif($currentCategory)
+                            {{ __('Aucune actualité dans cette catégorie pour le moment.') }}
+                        @else
+                            {{ __('Aucune actualité à afficher pour le moment.') }}
+                        @endif
+                    </h3>
+                    @if($searchTerm || $currentCategory)
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <a href="{{ route('public.news.index') }}" class="text-primary-600 hover:underline">{{__('Voir toutes les actualités')}}</a>
+                    </p>
+                    @endif
+                </div>
+            @endif
+        </div>
+    </section>
+</div>
 @endsection
